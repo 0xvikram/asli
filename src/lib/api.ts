@@ -149,6 +149,10 @@ export async function handleIssuerAction(
     return { status: 200, body: { ok: true, issuer: issuer.id, ...result, explorer: tx ? explorerTx(tx) : undefined } }
   } catch (err) {
     if (err instanceof BadRequest) return { status: 400, body: { error: err.message } }
+    const full = err instanceof Error ? `${err.message} ${String((err as { cause?: unknown }).cause ?? "")}` : ""
+    if (/gas required exceeds: 0|insufficient funds/i.test(full)) {
+      return { status: 503, body: { error: "This demo issuer's wallet has run out of test GLM. Try another issuer, or check back soon." } }
+    }
     const message = err instanceof Error ? err.message.split("\n")[0] : "write failed"
     return { status: 502, body: { error: `Arkiv write failed: ${message}` } }
   }

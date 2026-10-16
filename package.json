@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@arkiv-network/sdk": "^0.8.1",
-    "next": "15.5.4",
+    "next": "^15.5.27",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "tesseract.js": "^7.0.0",
@@ -27,7 +27,7 @@
     "@types/react-dom": "^19",
     "dotenv": "^17.2.3",
     "eslint": "^9",
-    "eslint-config-next": "15.5.4",
+    "eslint-config-next": "^15.5.27",
     "tsx": "^4.20.6",
     "typescript": "^5",
     "vitest": "^3.2.4"

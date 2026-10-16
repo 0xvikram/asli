@@ -112,6 +112,24 @@ describe("POST /api/issuer/issue", () => {
   })
 })
 
+describe("out of gas", () => {
+  it("explains an empty issuer wallet in plain words", async () => {
+    const fake = new FakeArkiv()
+    const broke = deps(fake)
+    broke.writerFor = (issuer) => ({
+      ...fake.writer(issuer.address),
+      createEntity: async () => {
+        throw new Error("Transaction failed: Execution error without revert data", {
+          cause: new Error("Details: out of gas: gas required exceeds: 0"),
+        })
+      },
+    })
+    const res = await handleIssuerAction("issue", issueBody(fake), "1", broke)
+    expect(res.status).toBe(503)
+    expect(String(res.body.error)).toMatch(/run out of test GLM/)
+  })
+})
+
 describe("postpone and revoke", () => {
   async function issued() {
     const fake = new FakeArkiv()
