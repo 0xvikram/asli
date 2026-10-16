@@ -6,7 +6,7 @@ export const metadata = { title: "How Asli works" }
 
 export default function AboutPage() {
   return (
-    <div className="stack">
+    <div className="stack narrow">
       <div>
         <h1>How Asli works</h1>
         <p className="lede">

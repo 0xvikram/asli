@@ -111,17 +111,23 @@ export const IMPOSTOR_NOTICE = {
 URGENT: All Class X and XII pre-board exams are cancelled due to a paper leak. Fees will be refunded. Contact your school for details.`,
 }
 
-export type Example = { label: string; expect: string; text: string }
+/**
+ * One forwarded message in the sample chat on the Verify page. `label` names the case for tests and
+ * tooltips; `from`, `group` and `time` dress it as the WhatsApp message it imitates.
+ */
+export type Example = { label: string; expect: string; text: string; from: string; group: string; time: string }
 
 export function verifyExamples(): Example[] {
   const n = (id: string) => SEED_NOTICES.find((x) => x.id === id)!.body
+  const parents = "Class 10-B Parents"
+  const hostel = "PDU Hostel Block C"
   return [
-    { label: "Doctored forward", expect: "altered", text: DOCTORED_FORWARD },
-    { label: "Real (WhatsApp copy)", expect: "real", text: `*${n("maths-preboard")}*\n🙏` },
-    { label: "Postponed", expect: "real + postponed", text: n("physics-practical") },
-    { label: "Withdrawn", expect: "revoked", text: n("winter-break") },
-    { label: "Hindi + English", expect: "real", text: n("fee-deadline") },
-    { label: "Impostor", expect: "unverified issuer", text: IMPOSTOR_NOTICE.body },
-    { label: "Expired", expect: "expired (after it lapses)", text: n("orientation") },
+    { label: "Doctored forward", expect: "altered", text: DOCTORED_FORWARD, from: "+91 98xxx xxx21", group: parents, time: "9:14 am" },
+    { label: "Real (WhatsApp copy)", expect: "real", text: `*${n("maths-preboard")}*\n🙏`, from: "Class teacher", group: parents, time: "9:20 am" },
+    { label: "Postponed", expect: "real + postponed", text: n("physics-practical"), from: "Tuition centre", group: "Class XII Science", time: "10:02 am" },
+    { label: "Withdrawn", expect: "revoked", text: n("winter-break"), from: "School office", group: parents, time: "11:47 am" },
+    { label: "Hindi + English", expect: "real", text: n("fee-deadline"), from: "CR (Sem 3)", group: hostel, time: "12:30 pm" },
+    { label: "Impostor", expect: "unverified issuer", text: IMPOSTOR_NOTICE.body, from: "+91 70xxx xxx09", group: parents, time: "1:05 pm" },
+    { label: "Expired", expect: "expired (after it lapses)", text: n("orientation"), from: "Senior (2nd year)", group: hostel, time: "Yesterday" },
   ]
 }

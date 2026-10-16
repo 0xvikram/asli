@@ -25,7 +25,7 @@ export default function IssuerPage({ params }: { params: Promise<{ address: stri
   if (!valid) return <p className="error">That is not a wallet address.</p>
 
   return (
-    <div className="stack">
+    <div className="stack narrow">
       <div>
         <h1>{verified?.name ?? claims[0]?.name ?? "Unknown publisher"}</h1>
         <p className="meta">

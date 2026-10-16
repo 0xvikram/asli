@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { FakeArkiv } from "../helpers/fakeArkiv"
 import { BOARD, BOARD_DOMAIN, EXAM_NOTICE, fakeProver, seedBoard } from "../helpers/fixtures"
 import { issueNotice } from "@/lib/arkiv/write"
-import { formatDay, shortAddress, timeLeft, toLocalInput, verdictCopy } from "@/lib/ui"
+import { checkSteps, formatDay, shareText, shortAddress, timeLeft, toLocalInput, verdictCopy } from "@/lib/ui"
 import { verify, type Verdict } from "@/lib/verify"
 
 describe("formatting", () => {
@@ -87,5 +87,73 @@ describe("postponed copy", () => {
     })
     expect(c.detail).not.toContain("..")
     expect(c.detail).toContain("Now in force until")
+  })
+})
+
+describe("checkSteps and shareText", () => {
+  async function world() {
+    const fake = new FakeArkiv()
+    const w = await seedBoard(fake)
+    const issued = await issueNotice(w, {
+      codePrefix: "DBSE",
+      title: "Maths exam",
+      body: EXAM_NOTICE,
+      category: "exam",
+      lang: "en",
+      validUntil: fake.inDays(10),
+      now: fake.now(),
+    })
+    const prove = fakeProver({ [BOARD_DOMAIN]: BOARD })
+    return { fake, issued, prove, r: fake.reader() }
+  }
+  const SITE = "https://asli.example"
+
+  it("real: every step passes and names the wallet and domain", async () => {
+    const { r, prove } = await world()
+    const v = await verify(r, { text: EXAM_NOTICE }, prove)
+    const steps = checkSteps(v)
+    expect(steps.length).toBeGreaterThanOrEqual(4)
+    expect(steps.every((s) => s.state === "pass")).toBe(true)
+    expect(steps.map((s) => s.label).join(" ")).toContain(BOARD_DOMAIN)
+    expect(steps.map((s) => s.detail).join(" ")).toContain(shortAddress(BOARD))
+  })
+
+  it("altered: the word-for-word step fails, the authorship steps pass", async () => {
+    const { r, prove } = await world()
+    const v = await verify(r, { text: EXAM_NOTICE.replace("12 March", "19 March") }, prove)
+    const steps = checkSteps(v)
+    expect(steps.filter((s) => s.state === "fail").map((s) => s.label)).toEqual(["Matches word for word"])
+  })
+
+  it("unknown: says nothing matched; empty has no steps", async () => {
+    const { r, prove } = await world()
+    const v = await verify(r, { text: "free laptops for everyone register now on this link" }, prove)
+    expect(checkSteps(v).some((s) => s.state === "fail")).toBe(true)
+    expect(checkSteps({ status: "empty" })).toEqual([])
+  })
+
+  it("the reply names the change and links to the real notice by code", async () => {
+    const { r, prove, issued } = await world()
+    const v = await verify(r, { text: EXAM_NOTICE.replace("12 March", "19 March") }, prove)
+    const t = shareText(v, SITE)
+    expect(t).toMatch(/^❌ Fake/)
+    expect(t).toContain('"12" was changed to "19"')
+    expect(t).toContain(`${SITE}/?code=${issued.code}`)
+    expect(t).toMatch(/[ऀ-ॿ]/)
+  })
+
+  it("the reply for a real notice is a green tick with a link", async () => {
+    const { r, prove, issued } = await world()
+    const t = shareText(await verify(r, { text: EXAM_NOTICE }, prove), SITE)
+    expect(t.startsWith("✅")).toBe(true)
+    expect(t).toContain(`?code=${issued.code}`)
+    expect(shareText({ status: "empty" }, SITE)).toBe("")
+  })
+
+  it("the reply for unknown text links to the site, not to a code", async () => {
+    const { r, prove } = await world()
+    const t = shareText(await verify(r, { text: "free laptops for everyone register now" }, prove), SITE)
+    expect(t).toContain(SITE)
+    expect(t).not.toContain("?code=")
   })
 })

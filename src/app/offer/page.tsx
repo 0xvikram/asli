@@ -31,9 +31,10 @@ export default function OfferPage() {
   }
 
   return (
-    <div className="stack">
+    <div className="stack narrow">
       <div>
-        <h1>Got a job offer letter?</h1>
+        <span className="eyebrow">For job seekers</span>
+        <h1>Got an offer letter? Check it before you pay anything.</h1>
         <p className="lede">
           Fake offer letters are how most job scams in India start: a real company&apos;s logo, then a &quot;training
           fee&quot;. Check the PDF against what the employer itself registered.
@@ -44,11 +45,26 @@ export default function OfferPage() {
 
       <div className="card">
         <div className="field">
-          <label htmlFor="f">Your offer letter PDF. It is hashed in your browser; the file and your name never leave it.</label>
-          <input id="f" type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <div className="dropzone">
+            <label htmlFor="f" style={{ marginBottom: 0 }}>
+              Choose your offer letter PDF. Only its fingerprint is checked; the file and your name never leave your device.
+            </label>
+            <input id="f" type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          </div>
+          <p className="hint">
+            No letter handy? Download Acme&apos;s{" "}
+            <a href="/samples/acme-offer-letter.pdf" download>
+              real offer letter
+            </a>{" "}
+            or a{" "}
+            <a href="/samples/acme-offer-letter-edited.pdf" download>
+              doctored copy
+            </a>{" "}
+            and check each.
+          </p>
         </div>
         <div className="row" style={{ marginTop: 16 }}>
-          <button className="btn" disabled={!file || busy} onClick={run}>
+          <button className="btn big" disabled={!file || busy} onClick={run}>
             {busy ? "Checking…" : "Check offer letter"}
           </button>
         </div>

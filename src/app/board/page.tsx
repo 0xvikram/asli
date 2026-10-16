@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { Hex } from "viem"
 import { browserReader } from "@/components/arkivBrowser"
+import { InstLogo } from "@/components/Brand"
 import { useIssuers } from "@/components/useTrustedIssuers"
 import { publicWatcher } from "@/lib/arkiv/client"
 import { noticeByKey, noticesOfIssuer, type NoticeRecord } from "@/lib/arkiv/read"
@@ -85,10 +86,11 @@ export default function BoardPage() {
   return (
     <div className="stack">
       <div>
-        <h1>Live notice board</h1>
+        <span className="eyebrow">Live from Arkiv</span>
+        <h1>Every notice in force right now.</h1>
         <p className="lede">
-          Every notice currently in force from an issuer whose domain vouches for it. A notice drops off by itself when
-          its validity ends.
+          From every institution whose website vouches for its wallet. New notices, postponements and withdrawals appear
+          here the moment they happen, and a notice drops off by itself when its validity ends.
         </p>
         <p className="meta">
           {live ? (
@@ -117,28 +119,34 @@ export default function BoardPage() {
         </div>
       )}
 
-      <div className="card">
+      <div>
         {rows === null ? (
           <p className="meta">Loading notices from Arkiv…</p>
         ) : shown.length === 0 ? (
           <p className="meta">No live notices right now.</p>
         ) : (
-          <ul className="list">
-            {shown.map((r) => (
-              <li key={r.key} className={r.flash ? "flash" : undefined} style={r.gone ? { opacity: 0.55 } : undefined}>
-                <div className="row" style={{ justifyContent: "space-between" }}>
-                  <h3 style={{ margin: 0 }}>{r.title}</h3>
-                  <span className={`badge ${r.gone ? "bad" : r.flash === "extended" ? "warn" : "good"}`}>
-                    {r.gone ? "withdrawn just now" : r.flash === "extended" ? "postponed just now" : timeLeft(r.validUntil, now)}
-                  </span>
+          shown.map((r) => (
+            <div key={r.key} className={`notice-card${r.flash ? " flash" : ""}`} style={r.gone ? { opacity: 0.55 } : undefined}>
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "nowrap" }}>
+                <div className="row" style={{ flexWrap: "nowrap", alignItems: "flex-start", minWidth: 0 }}>
+                  <InstLogo name={r.issuerName} address={r.creator} />
+                  <div style={{ minWidth: 0 }}>
+                    <h3>{r.title}</h3>
+                    <p className="meta" style={{ margin: "2px 0 0" }}>
+                      <Link href={`/issuer/${r.creator}`}>{r.issuerName}</Link> · <span className="tick">✓ {r.domain}</span>
+                    </p>
+                  </div>
                 </div>
-                <p className="meta" style={{ margin: "4px 0 0" }}>
-                  <Link href={`/issuer/${r.creator}`}>{r.issuerName}</Link> · {r.domain} · code <code>{r.code}</code> ·{" "}
-                  {r.category} · valid till {formatDay(r.validUntil)}
-                </p>
-              </li>
-            ))}
-          </ul>
+                <span className={`badge ${r.gone ? "bad" : r.flash === "extended" ? "warn" : r.flash === "new" ? "good" : "good"}`} style={{ whiteSpace: "nowrap" }}>
+                  {r.gone ? "Withdrawn just now" : r.flash === "extended" ? "Postponed just now" : r.flash === "new" ? "New" : timeLeft(r.validUntil, now)}
+                </span>
+              </div>
+              <p className="meta" style={{ margin: "8px 0 0" }}>
+                <code>{r.code}</code> · {r.category} · valid until {formatDay(r.validUntil)} ·{" "}
+                <Link href={`/?code=${r.code}`}>Verify</Link>
+              </p>
+            </div>
+          ))
         )}
       </div>
     </div>

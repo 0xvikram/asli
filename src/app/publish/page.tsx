@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import type { Hex } from "viem"
 import { browserReader } from "@/components/arkivBrowser"
+import { InstLogo } from "@/components/Brand"
 import { browserWallet, connectWallet } from "@/components/metamask"
 import { explorerAddress, explorerTx, type Writer } from "@/lib/arkiv/client"
 import { noticesOfIssuer, type NoticeRecord } from "@/lib/arkiv/read"
@@ -14,9 +15,9 @@ import { NOTICE_CATEGORIES } from "@/lib/schema"
 import { fileToBytes, formatDay, shortAddress, timeLeft, toLocalInput } from "@/lib/ui"
 
 const ISSUERS = [
-  { id: "board", name: "Demo Board of Secondary Education", address: "0x2043DB00a32bd8C4804227B72b97438af39a7De6" },
-  { id: "univ", name: "Pune Demo University", address: "0x94a9C31a9dcdd7EBD44b9c4d7511a27149ec6F81" },
-  { id: "employer", name: "Acme Infotech (offer letters)", address: "0x51Ad2Cf42bc81C254bcdd078e15c75890532905f" },
+  { id: "board", name: "Demo Board of Secondary Education", domain: "asli-board.vercel.app", address: "0x2043DB00a32bd8C4804227B72b97438af39a7De6" },
+  { id: "univ", name: "Pune Demo University", domain: "asli-puneuni.vercel.app", address: "0x94a9C31a9dcdd7EBD44b9c4d7511a27149ec6F81" },
+  { id: "employer", name: "Acme Infotech", domain: "asli-acme.vercel.app", address: "0x51Ad2Cf42bc81C254bcdd078e15c75890532905f" },
 ] as const
 
 type Result = { ok: boolean; message: string; tx?: string; code?: string }
@@ -39,117 +40,163 @@ export default function PublishPage() {
   const active = ISSUERS.find((i) => i.id === issuer)!
   const [mine, setMine] = useState<NoticeRecord[] | null>(null)
   const [result, setResult] = useState<Result | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState<string | null>(null)
 
   const refresh = useCallback(() => {
     setMine(null)
-    noticesOfIssuer(browserReader(), active.address as Hex).then(setMine, () => setMine([]))
+    noticesOfIssuer(browserReader(), active.address as Hex).then(
+      (list) => setMine(list.sort((a, b) => b.issuedAt - a.issuedAt)),
+      () => setMine([]),
+    )
   }, [active.address])
   useEffect(refresh, [refresh])
 
-  async function act(action: string, body: Record<string, unknown>) {
-    setBusy(true)
+  async function act(action: string, body: Record<string, unknown>, label: string) {
+    setBusy(label)
     setResult(null)
     const r = await call(action, { issuer, ...body })
     setResult(r)
-    setBusy(false)
+    setBusy(null)
     if (r.ok) setTimeout(refresh, 2500)
   }
 
   return (
     <div className="stack">
       <div>
-        <h1>Publish as an institution</h1>
-        <p className="lede">
-          The playground lets you act as one of three fictional issuers without a wallet. The server signs with that
-          issuer&apos;s own key, so everything you publish is authored on Arkiv by the issuer&apos;s wallet, exactly as if
-          the institution signed it. Playground notices last at most 7 days.
+        <span className="eyebrow">Institution console</span>
+        <h1>Publish notices people can verify.</h1>
+        <p className="lede" style={{ marginBottom: 0 }}>
+          Every notice you publish is signed by your institution&apos;s wallet and stored on Arkiv until its valid-until
+          date. Postpone it and every forward shows the new date; withdraw it and every forward shows it was withdrawn.
         </p>
       </div>
 
-      <div className="card">
-        <label htmlFor="iss">Act as</label>
-        <select id="iss" value={issuer} onChange={(e) => setIssuer(e.target.value as typeof issuer)}>
+      <section>
+        <p className="section-title">Signed in as (demo institutions)</p>
+        <div className="inst-grid">
           {ISSUERS.map((i) => (
-            <option key={i.id} value={i.id}>
-              {i.name}
-            </option>
+            <button
+              key={i.id}
+              className="inst"
+              aria-pressed={issuer === i.id}
+              onClick={() => {
+                setIssuer(i.id)
+                setResult(null)
+              }}
+            >
+              <InstLogo name={i.name} address={i.address} />
+              <span>
+                <span className="name">{i.name}</span>
+                <br />
+                <span className="dom">{i.domain}</span> <span className="tick">✓ verified</span>
+              </span>
+            </button>
           ))}
-        </select>
+        </div>
         <p className="meta">
-          Wallet{" "}
+          Demo sign-in: Asli signs with the institution&apos;s own wallet{" "}
           <a href={explorerAddress(active.address)} target="_blank" rel="noreferrer">
             {shortAddress(active.address)}
-          </a>{" "}
-          · <Link href={`/issuer/${active.address}`}>issuer page</Link>
+          </a>
+          , so Arkiv records it as the author. Demo notices last up to 7 days. A real institution signs with its own
+          wallet (below). · <Link href={`/issuer/${active.address}`}>Public page</Link>
         </p>
-      </div>
-
-      {issuer === "employer" ? <OfferForm busy={busy} onSubmit={(b) => act("offer", b)} /> : <NoticeForm busy={busy} onSubmit={(b) => act("issue", b)} />}
+      </section>
 
       {result && (
-        <p className={result.ok ? "ok" : "error"}>
+        <div className={`verdict ${result.ok ? "good" : "bad"}`} style={{ padding: 16 }}>
           {result.ok ? (
             <>
-              Published{result.code && <> with code <code>{result.code}</code></>}.{" "}
+              <strong>Published to Arkiv{result.code && <> as {result.code}</>}.</strong>{" "}
+              {result.code && (
+                <>
+                  <Link href={`/?code=${result.code}`}>Check it like a parent would</Link> ·{" "}
+                </>
+              )}
               {result.tx && (
                 <a href={explorerTx(result.tx)} target="_blank" rel="noreferrer">
-                  View transaction
+                  View the transaction
                 </a>
               )}
             </>
           ) : (
-            result.message
+            <strong>{result.message}</strong>
           )}
-        </p>
+        </div>
       )}
 
-      {issuer !== "employer" && (
+      <div className="split">
+        {issuer === "employer" ? (
+          <OfferForm busy={busy !== null} onSubmit={(b) => act("offer", b, "Registering…")} />
+        ) : (
+          <NoticeForm busy={busy !== null} onSubmit={(b) => act("issue", b, "Publishing…")} />
+        )}
+
         <div className="card">
-          <h3>Notices in force from {active.name}</h3>
-          {mine === null ? (
-            <p className="meta">Loading…</p>
+          <div className="row" style={{ justifyContent: "space-between", marginBottom: 10 }}>
+            <h3 style={{ margin: 0 }}>{issuer === "employer" ? "Offer letters" : "Your live notices"}</h3>
+            {busy && (
+              <span className="meta">
+                <span className="spinner" /> {busy}
+              </span>
+            )}
+          </div>
+          {issuer === "employer" ? (
+            <p className="meta">
+              Offer letters are stored as a file fingerprint only, never the candidate&apos;s name. Candidates check them
+              on the <Link href="/offer">Offer letters</Link> page.
+            </p>
+          ) : mine === null ? (
+            <p className="meta">Loading from Arkiv…</p>
           ) : mine.length === 0 ? (
-            <p className="meta">None yet.</p>
+            <p className="meta">No live notices. Publish one on the left.</p>
           ) : (
-            <ul className="list">
-              {mine.map((n) => (
-                <li key={n.key}>
-                  <div className="row" style={{ justifyContent: "space-between" }}>
-                    <strong>{n.title}</strong>
-                    <span className="badge good">{timeLeft(n.validUntil)}</span>
+            mine.map((n) => {
+              const postponed = n.validUntil - n.originalValidUntil > 60 * 60_000
+              return (
+                <div key={n.key} className="notice-card">
+                  <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <h3>{n.title}</h3>
+                    <span className={`badge ${postponed ? "warn" : "good"}`}>{postponed ? "Postponed" : "Live"}</span>
                   </div>
-                  <div className="meta">
-                    <code>{n.code}</code> · valid till {formatDay(n.validUntil)}
+                  <div className="meta" style={{ marginTop: 4 }}>
+                    <code>{n.code}</code> · {n.category} · valid until {formatDay(n.validUntil)} ({timeLeft(n.validUntil)})
                   </div>
-                  <div className="row" style={{ marginTop: 8 }}>
+                  <div className="row" style={{ marginTop: 10, gap: 8 }}>
+                    <Link className="btn ghost small" href={`/?code=${n.code}`}>
+                      Verify
+                    </Link>
                     <button
                       className="btn ghost small"
-                      disabled={busy}
+                      disabled={busy !== null}
                       onClick={() =>
-                        act("postpone", {
-                          noticeKey: n.key,
-                          newValidUntil: new Date(Math.min(n.validUntil + 2 * 86_400_000, days(7).getTime() - 60_000)).toISOString(),
-                          reason: "Postponed by the issuer (playground)",
-                        })
+                        act(
+                          "postpone",
+                          {
+                            noticeKey: n.key,
+                            newValidUntil: new Date(Math.min(n.validUntil + 2 * 86_400_000, days(7).getTime() - 60_000)).toISOString(),
+                            reason: "Postponed by the institution",
+                          },
+                          "Postponing…",
+                        )
                       }
                     >
                       Postpone 2 days
                     </button>
                     <button
                       className="btn ghost small"
-                      disabled={busy}
-                      onClick={() => act("revoke", { noticeKey: n.key, reason: "Withdrawn by the issuer (playground)" })}
+                      disabled={busy !== null}
+                      onClick={() => act("revoke", { noticeKey: n.key, reason: "Withdrawn by the institution" }, "Withdrawing…")}
                     >
                       Withdraw
                     </button>
                   </div>
-                </li>
-              ))}
-            </ul>
+                </div>
+              )
+            })
           )}
         </div>
-      )}
+      </div>
 
       <OwnWallet />
     </div>
@@ -165,13 +212,13 @@ function NoticeForm({ busy, onSubmit }: { busy: boolean; onSubmit: (b: Record<st
   const [until, setUntil] = useState(() => toLocalInput(days(3)))
   return (
     <div className="card">
-      <h3>Issue a notice</h3>
+      <h3>New notice</h3>
       <div className="field">
-        <label htmlFor="ti">Title (display only)</label>
+        <label htmlFor="ti">Title</label>
         <input id="ti" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
       </div>
       <div className="field">
-        <label htmlFor="bo">Full notice text, as people will forward it</label>
+        <label htmlFor="bo">Full text, exactly as people will forward it</label>
         <textarea id="bo" value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} />
       </div>
       <div className="grid2">
@@ -184,7 +231,7 @@ function NoticeForm({ busy, onSubmit }: { busy: boolean; onSubmit: (b: Record<st
           </select>
         </div>
         <div className="field">
-          <label htmlFor="un">Valid until (becomes its lifetime on Arkiv)</label>
+          <label htmlFor="un">Valid until (its lifetime on Arkiv)</label>
           <input id="un" type="datetime-local" value={until} onChange={(e) => setUntil(e.target.value)} />
         </div>
       </div>
@@ -280,9 +327,9 @@ function OwnWallet() {
   return (
     <div className="card stack">
       <div>
-        <h3>Use your own wallet (MetaMask)</h3>
+        <h3>Publish as your own institution</h3>
         <p className="meta" style={{ fontSize: 14 }}>
-          This is how a real institution would publish: its own wallet signs, so its address is the permanent author.
+          Connect MetaMask and your wallet becomes the permanent author of what you publish.
           Anyone can register a name here, but it only shows as verified once the domain lists the wallet in{" "}
           <code>{WELL_KNOWN_PATH}</code> or a DNS TXT record <code>_asli.yourdomain → asli-issuer=0x…</code>. You need
           test GLM from the <a href="https://hub.arkiv.network/faucet">Arkiv faucet</a>.

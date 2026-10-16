@@ -4,10 +4,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 const LINKS = [
-  { href: "/", label: "Verify" },
-  { href: "/board", label: "Live board" },
-  { href: "/offer", label: "Offer letter" },
-  { href: "/publish", label: "Publish" },
+  { href: "/", label: "Check a notice" },
+  { href: "/offer", label: "Offer letters" },
+  { href: "/board", label: "Live notices" },
   { href: "/about", label: "How it works" },
 ]
 
@@ -20,6 +19,10 @@ export function Nav() {
           {l.label}
         </Link>
       ))}
+      <span className="spacer" />
+      <Link href="/publish" className={`cta${path === "/publish" ? " active" : ""}`}>
+        For institutions
+      </Link>
     </nav>
   )
 }

@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect, useState } from "react"
 import { explorerAddress } from "@/lib/arkiv/client"
 import type { DiffOp } from "@/lib/match"
-import { formatDate, formatDay, shortAddress, verdictCopy } from "@/lib/ui"
+import { checkSteps, formatDate, shareText, shortAddress, verdictCopy, type CheckStep } from "@/lib/ui"
 import type { Verdict } from "@/lib/verify"
 
 const ICON = { good: "✓", bad: "✕", warn: "!", neutral: "?" } as const
@@ -30,89 +31,130 @@ export function DiffView({ ops }: { ops: DiffOp[] }) {
   )
 }
 
+export function CheckSteps({ steps }: { steps: CheckStep[] }) {
+  return (
+    <ol className="steps" aria-label="What Asli checked">
+      {steps.map((st, i) => (
+        <li key={i} className={st.state} style={{ animationDelay: `${i * 160}ms` }}>
+          <span className="mark" aria-label={st.state === "pass" ? "passed" : st.state === "fail" ? "failed" : "note"}>
+            {st.state === "pass" ? "✓" : st.state === "fail" ? "✕" : "i"}
+          </span>
+          <span>
+            <span className="lbl">{st.label}</span>
+            <br />
+            <span className="dt">{st.detail}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function CopyReply({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      className="btn small"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2500)
+        } catch {
+          setCopied(false)
+        }
+      }}
+    >
+      {copied ? "Copied. Paste it in the group" : "Copy a reply for the group"}
+    </button>
+  )
+}
+
 export function VerdictCard({ verdict, fromOcr }: { verdict: Verdict; fromOcr?: boolean }) {
   const copy = verdictCopy(verdict, { fromOcr })
   const issuer = "issuer" in verdict ? verdict.issuer : undefined
   const notice = "notice" in verdict ? verdict.notice : undefined
+  const [site, setSite] = useState("https://asli-verify.vercel.app")
+  useEffect(() => setSite(window.location.origin), [])
 
   return (
     <section className={`verdict ${copy.tone}`} aria-live="polite">
-      <div className="row" style={{ alignItems: "flex-start", flexWrap: "nowrap" }}>
-        <div className="icon" aria-hidden>
-          {ICON[copy.tone]}
-        </div>
-        <div className="stack" style={{ flex: 1, minWidth: 0 }}>
-          <div>
+      <div className="stack">
+        <div className="verdict-head">
+          <div className="seal" aria-hidden>
+            {ICON[copy.tone]}
+          </div>
+          <div style={{ minWidth: 0 }}>
             <div className="headline">{copy.headline}</div>
             <div className="hi">{copy.hindi}</div>
+            {copy.detail && <p style={{ margin: "8px 0 0" }}>{copy.detail}</p>}
           </div>
-          {copy.detail && <p style={{ margin: 0 }}>{copy.detail}</p>}
+        </div>
 
-          {verdict.status === "altered" && verdict.changes.length > 0 && (
-            <div>
-              <strong>What was changed</strong>
-              <ul className="changes">
-                {verdict.changes.slice(0, 6).map((c, i) => (
-                  <li key={i}>
-                    {c.original ? (
-                      <>
-                        Real notice says <del>{c.original}</del>
-                      </>
-                    ) : (
-                      "Nothing here in the real notice"
-                    )}
-                    {" → "}
-                    {c.forwarded ? (
-                      <>
-                        forward says <ins>{c.forwarded}</ins>
-                      </>
-                    ) : (
-                      "removed in the forward"
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <div style={{ marginTop: 12 }}>
-                <DiffView ops={verdict.ops} />
-              </div>
+        {verdict.status === "altered" && verdict.changes.length > 0 && (
+          <div className="panel">
+            <strong>What was changed</strong>
+            <ul className="changes">
+              {verdict.changes.slice(0, 6).map((c, i) => (
+                <li key={i}>
+                  {c.original ? (
+                    <>
+                      Real notice says <del>{c.original}</del>
+                    </>
+                  ) : (
+                    "Nothing here in the real notice"
+                  )}
+                  {" → "}
+                  {c.forwarded ? (
+                    <>
+                      forward says <ins>{c.forwarded}</ins>
+                    </>
+                  ) : (
+                    "removed in the forward"
+                  )}
+                </li>
+              ))}
+            </ul>
+            <div style={{ marginTop: 12 }}>
+              <DiffView ops={verdict.ops} />
             </div>
-          )}
+          </div>
+        )}
 
-          {notice && verdict.status !== "unverified-issuer" && (
-            <details>
-              <summary>Read the real notice ({notice.code})</summary>
-              <p className="notice-body">{notice.body}</p>
-            </details>
-          )}
+        <div className="panel">
+          <p className="section-title" style={{ marginBottom: 4 }}>
+            What we checked
+          </p>
+          <CheckSteps steps={checkSteps(verdict)} />
+        </div>
 
-          {verdict.status === "real" && verdict.amendments.length > 0 && (
-            <p className="meta" style={{ margin: 0 }}>
-              Postponed on {formatDate(verdict.amendments[0].issuedAt)} by the issuer. The notice&apos;s lifetime on
-              Arkiv was extended in the same transaction as this explanation.
-            </p>
-          )}
+        {notice && verdict.status !== "unverified-issuer" && (
+          <details className="panel">
+            <summary>Read the real notice ({notice.code})</summary>
+            <p className="notice-body">{notice.body}</p>
+          </details>
+        )}
 
+        <div className="actions">
+          <CopyReply text={shareText(verdict, site, { fromOcr })} />
           {issuer && (
-            <p className="meta" style={{ margin: 0 }}>
-              Issuer: <Link href={`/issuer/${issuer.creator}`}>{issuer.name}</Link> · domain{" "}
-              <strong>{issuer.domain}</strong> vouches for wallet{" "}
-              <a href={explorerAddress(issuer.creator)} target="_blank" rel="noreferrer">
-                {shortAddress(issuer.creator)}
-              </a>{" "}
-              via {issuer.proof.method === "dns-txt" ? "DNS TXT" : "/.well-known/asli-issuer.json"}
-              {notice && <> · issued {formatDay(notice.issuedAt)}</>}
-            </p>
+            <Link className="btn ghost small" href={`/issuer/${issuer.creator}`}>
+              {issuer.name}
+            </Link>
           )}
-          {verdict.status === "unverified-issuer" && (
-            <p className="meta" style={{ margin: 0 }}>
-              Published by wallet{" "}
-              <a href={explorerAddress(verdict.notice.creator)} target="_blank" rel="noreferrer">
-                {shortAddress(verdict.notice.creator)}
-              </a>
-              . Anyone can write to Arkiv; only a domain&apos;s own proof makes a wallet an issuer.
-            </p>
+          {(issuer || notice) && (
+            <a className="btn ghost small" href={explorerAddress(issuer?.creator ?? notice!.creator)} target="_blank" rel="noreferrer">
+              See the author on the block explorer
+            </a>
           )}
         </div>
+        {issuer && notice && (
+          <p className="meta" style={{ margin: 0 }}>
+            Wallet {shortAddress(issuer.creator)} · proof via{" "}
+            {issuer.proof.method === "dns-txt" ? "DNS TXT" : "/.well-known/asli-issuer.json"} · issued{" "}
+            {formatDate(notice.issuedAt)}
+          </p>
+        )}
       </div>
     </section>
   )

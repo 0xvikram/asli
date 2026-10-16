@@ -113,3 +113,112 @@ export function toLocalInput(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0")
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
+
+export type StepState = "pass" | "fail" | "info"
+export type CheckStep = { label: string; detail: string; state: StepState }
+
+/**
+ * The checks behind a verdict, in the order the engine runs them. Shown under the headline so a
+ * reader sees why the answer is what it is, not just the answer.
+ */
+export function checkSteps(v: Verdict): CheckStep[] {
+  const signed = (creator: string): CheckStep => ({
+    label: "Signed by the institution's wallet",
+    detail: `Arkiv records ${shortAddress(creator)} as the author. Nobody else can write as that wallet.`,
+    state: "pass",
+  })
+  const vouched = (domain: string): CheckStep => ({
+    label: `${domain} vouches for that wallet`,
+    detail: `Your browser fetched ${domain}/.well-known/asli-issuer.json and found the same wallet listed.`,
+    state: "pass",
+  })
+  switch (v.status) {
+    case "real":
+      return [
+        { label: "Found on Arkiv", detail: `Notice ${v.notice.code}, published ${formatDay(v.notice.issuedAt)}.`, state: "pass" },
+        signed(v.issuer.creator),
+        vouched(v.issuer.domain),
+        { label: "Matches word for word", detail: "The text you checked is identical to what the institution published.", state: "pass" },
+        {
+          label: "Still in force",
+          detail:
+            v.amendments.length > 0
+              ? `Postponed ${v.amendments.length === 1 ? "once" : `${v.amendments.length} times`}; now valid until ${formatDay(v.notice.validUntil)}.`
+              : `Valid until ${formatDay(v.notice.validUntil)} (${timeLeft(v.notice.validUntil)}).`,
+          state: "pass",
+        },
+      ]
+    case "altered":
+      return [
+        { label: "Closest real notice found on Arkiv", detail: `Notice ${v.notice.code}: "${v.notice.title}".`, state: "pass" },
+        signed(v.issuer.creator),
+        vouched(v.issuer.domain),
+        {
+          label: "Matches word for word",
+          detail: `${v.changes.length || "Some"} change${v.changes.length === 1 ? "" : "s"} from the real notice. See them below.`,
+          state: "fail",
+        },
+      ]
+    case "revoked":
+      return [
+        { label: "Found on Arkiv", detail: `Notice ${v.revocation.code}: "${v.revocation.title}".`, state: "pass" },
+        signed(v.issuer.creator),
+        vouched(v.issuer.domain),
+        { label: "Still in force", detail: `Withdrawn on ${formatDay(v.revocation.revokedAt)}. ${v.revocation.reason}`, state: "fail" },
+      ]
+    case "expired":
+      return [
+        { label: "Found in Arkiv's history", detail: `Notice ${v.notice.code} existed at block ${v.seenAtBlock}.`, state: "pass" },
+        signed(v.issuer.creator),
+        vouched(v.issuer.domain),
+        { label: "Still in force", detail: `Its validity ended on ${formatDay(v.notice.validUntil)}, so Arkiv no longer returns it.`, state: "fail" },
+      ]
+    case "unverified-issuer":
+      return [
+        { label: "Found on Arkiv", detail: `Notice ${v.notice.code}.`, state: "pass" },
+        {
+          label: "Published by wallet " + shortAddress(v.notice.creator),
+          detail: "Anyone can write to Arkiv, so the author alone proves nothing.",
+          state: "info",
+        },
+        {
+          label: v.claimedDomain ? `${v.claimedDomain} vouches for that wallet` : "A domain vouches for that wallet",
+          detail: v.claimedDomain
+            ? `${v.claimedDomain} lists a different wallet. This one is an impostor using its name.`
+            : "No institution's website lists this wallet.",
+          state: "fail",
+        },
+      ]
+    case "unknown":
+      return [
+        {
+          label: `Searched ${v.checkedIssuers} verified institution${v.checkedIssuers === 1 ? "" : "s"}`,
+          detail: "Live notices, withdrawn notices, and notices that ended in the last 12 days.",
+          state: "info",
+        },
+        { label: "Found a matching notice", detail: "Nothing close to this text or code.", state: "fail" },
+      ]
+    case "empty":
+      return []
+  }
+}
+
+const SHARE_ICON: Record<Tone, string> = { good: "✅", bad: "❌", warn: "⚠️", neutral: "❓" }
+
+/** A short reply for the WhatsApp group the forward came from, with a link anyone can open. */
+export function shareText(v: Verdict, site: string, opts: { fromOcr?: boolean } = {}): string {
+  if (v.status === "empty") return ""
+  const c = verdictCopy(v, opts)
+  const code = "notice" in v ? v.notice.code : v.status === "revoked" ? v.revocation.code : null
+  const lines = [`${SHARE_ICON[c.tone]} ${c.headline}`, c.hindi]
+  if (v.status === "altered" && v.changes.length > 0) {
+    const shown = v.changes
+      .slice(0, 3)
+      .map((ch) => (ch.original && ch.forwarded ? `"${ch.original}" was changed to "${ch.forwarded}"` : ch.forwarded ? `"${ch.forwarded}" was added` : `"${ch.original}" was removed`))
+    lines.push(`The real notice: ${shown.join("; ")}.`)
+  } else if (c.detail) {
+    lines.push(c.detail)
+  }
+  lines.push(code && v.status !== "unverified-issuer" ? `Check it yourself: ${site}/?code=${code}` : `Check any forward: ${site}`)
+  return lines.join("\n")
+}

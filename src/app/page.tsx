@@ -1,12 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import Link from "next/link"
+import { useEffect, useMemo, useRef, useState } from "react"
 import type { Hex } from "viem"
 import { browserReader, cachedProve } from "@/components/arkivBrowser"
+import { InstLogo } from "@/components/Brand"
+import { useIssuers } from "@/components/useTrustedIssuers"
 import { VerdictCard } from "@/components/VerdictCard"
 import { hashFileBytes } from "@/lib/normalize"
 import { fileToBytes } from "@/lib/ui"
-import { verify, type Verdict } from "@/lib/verify"
+import { verify, type Verdict, type VerifyInput } from "@/lib/verify"
 import { verifyExamples } from "@/lib/demoData"
 
 type Mode = "text" | "code" | "pdf" | "image"
@@ -21,36 +24,40 @@ export default function VerifyPage() {
   const [fromOcr, setFromOcr] = useState(false)
   const [ocrText, setOcrText] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [picked, setPicked] = useState<string | null>(null)
+  const resultRef = useRef<HTMLDivElement>(null)
+  const examples = useMemo(verifyExamples, [])
 
-  async function run() {
+  async function check(input: VerifyInput, label: string, ocr = false) {
+    setBusy(label)
+    setFromOcr(ocr)
+    const v = await verify(browserReader(), input, cachedProve)
+    setVerdict(v)
+    requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }))
+  }
+
+  async function run(override?: { mode: Mode; value: string }) {
     setError(null)
     setVerdict(null)
     setOcrText(null)
+    const m = override?.mode ?? mode
     try {
-      if (mode === "text") {
-        setBusy("Checking Arkiv…")
-        setFromOcr(false)
-        setVerdict(await verify(browserReader(), { text }, cachedProve))
-      } else if (mode === "code") {
-        setBusy("Looking up the code…")
-        setFromOcr(false)
-        setVerdict(await verify(browserReader(), { code }, cachedProve))
-      } else if (mode === "pdf") {
+      if (m === "text") {
+        await check({ text: override?.value ?? text }, "Searching Arkiv for this notice…")
+      } else if (m === "code") {
+        await check({ code: override?.value ?? code }, "Looking up the code on Arkiv…")
+      } else if (m === "pdf") {
         if (!file) throw new Error("Choose a PDF first")
-        setBusy("Hashing the file in your browser…")
+        setBusy("Fingerprinting the file in your browser…")
         const fileHash = hashFileBytes(await fileToBytes(file)) as Hex
-        setBusy("Checking Arkiv…")
-        setFromOcr(false)
-        setVerdict(await verify(browserReader(), { fileHash }, cachedProve))
+        await check({ fileHash }, "Searching Arkiv for this file…")
       } else {
         if (!file) throw new Error("Choose a screenshot first")
-        setBusy("Reading the screenshot (first time downloads the reader, ~10 MB)…")
+        setBusy("Reading the screenshot (the first time downloads the reader, about 10 MB)…")
         const { recognize } = await import("@/components/ocr")
         const read = await recognize(file, (p) => setBusy(`Reading the screenshot… ${Math.round(p * 100)}%`))
         setOcrText(read)
-        setBusy("Checking Arkiv…")
-        setFromOcr(true)
-        setVerdict(await verify(browserReader(), { text: read }, cachedProve))
+        await check({ text: read }, "Searching Arkiv for this notice…", true)
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong")
@@ -58,6 +65,17 @@ export default function VerifyPage() {
       setBusy(null)
     }
   }
+
+  // A shared link like /?code=DBSE-26-2H96 opens straight to the answer.
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("code")
+    if (c) {
+      setMode("code")
+      setCode(c)
+      void run({ mode: "code", value: c })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const tabs: { id: Mode; label: string }[] = [
     { id: "text", label: "Paste text" },
@@ -67,115 +85,226 @@ export default function VerifyPage() {
   ]
 
   return (
-    <div className="stack">
-      <div>
-        <h1>Is this notice real?</h1>
-        <p className="lede">
-          Paste a forwarded school, board, university or exam notice. Asli checks it against what the institution
-          itself published on Arkiv, and shows exactly what was changed if it was doctored.
-          <br />
-          <span className="hi">व्हाट्सऐप पर आई सूचना पेस्ट करें, हम बताएँगे कि यह असली है या नकली।</span>
-        </p>
-      </div>
+    <div className="stack home">
+      <div className="hero">
+        <div className="stack">
+          <div>
+            <span className="eyebrow">For parents, students and job seekers in India</span>
+            <h1>Check a notice before you forward it.</h1>
+            <p className="lede" style={{ marginBottom: 0 }}>
+              Paste a school, board, university or exam notice from WhatsApp. Asli compares it with what the institution
+              itself published, and shows exactly what was changed if someone doctored it.
+              <br />
+              <span className="hi">व्हाट्सऐप पर आई सूचना पेस्ट करें, हम बताएँगे कि यह असली है या नकली।</span>
+            </p>
+          </div>
 
-      <div className="card">
-        <div className="tabs" role="tablist">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              className="tab"
-              role="tab"
-              aria-selected={mode === t.id}
-              onClick={() => {
-                setMode(t.id)
-                setFile(null)
-                setVerdict(null)
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
+          <div className="card verify-card">
+            <div className="tabs" role="tablist">
+              {tabs.map((t) => (
+                <button
+                  key={t.id}
+                  className="tab"
+                  role="tab"
+                  aria-selected={mode === t.id}
+                  onClick={() => {
+                    setMode(t.id)
+                    setFile(null)
+                    setVerdict(null)
+                    setError(null)
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {mode === "text" && (
+              <div className="field">
+                <label htmlFor="t">The notice, exactly as you received it. Emoji and *stars* are fine.</label>
+                <textarea
+                  id="t"
+                  value={text}
+                  onChange={(e) => {
+                    setText(e.target.value)
+                    setPicked(null)
+                  }}
+                  placeholder="Paste the forwarded message here…"
+                />
+              </div>
+            )}
+            {mode === "code" && (
+              <div className="field">
+                <label htmlFor="c">The Asli code printed at the bottom of the notice</label>
+                <input
+                  id="c"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  autoCapitalize="characters"
+                  placeholder="e.g. DBSE-26-2H96"
+                />
+                <p className="hint">
+                  Try <button className="linkish" onClick={() => setCode("DBSE-26-2H96")}>DBSE-26-2H96</button>. Spaces
+                  and lowercase are fine.
+                </p>
+              </div>
+            )}
+            {(mode === "pdf" || mode === "image") && (
+              <div className="field">
+                <div className="dropzone">
+                  <label htmlFor="f" style={{ marginBottom: 0 }}>
+                    {mode === "pdf"
+                      ? "Choose the PDF. Only its fingerprint is checked; the file never leaves your device."
+                      : "Choose a screenshot of the notice. It is read on your device and never uploaded."}
+                  </label>
+                  <input
+                    id="f"
+                    type="file"
+                    accept={mode === "pdf" ? "application/pdf" : "image/*"}
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+                <p className="hint">
+                  {mode === "pdf" ? (
+                    <>
+                      No PDF handy? Download the board&apos;s{" "}
+                      <a href="/samples/dbse-notice-41.pdf" download>
+                        sample notice
+                      </a>{" "}
+                      and check it.
+                    </>
+                  ) : (
+                    "English reads best. Hindi is best effort, so a screenshot that is close but not identical shows as a warning, not a fake."
+                  )}
+                </p>
+              </div>
+            )}
+
+            <div className="row" style={{ marginTop: 16 }}>
+              <button className="btn big" onClick={() => run()} disabled={busy !== null}>
+                {busy ? (
+                  <>
+                    <span className="spinner" /> Checking
+                  </>
+                ) : (
+                  "Check notice"
+                )}
+              </button>
+              {busy && <span className="meta">{busy}</span>}
+            </div>
+            {error && <p className="error">{error}</p>}
+          </div>
+
+          <div ref={resultRef} className="stack" style={{ scrollMarginTop: 130 }}>
+            {verdict && <VerdictCard verdict={verdict} fromOcr={fromOcr} />}
+            {ocrText && (
+              <details className="card">
+                <summary>Text read from the screenshot</summary>
+                <p className="notice-body">{ocrText}</p>
+              </details>
+            )}
+          </div>
         </div>
 
-        {mode === "text" && (
-          <div className="field">
-            <label htmlFor="t">The notice, exactly as you received it (emoji and *stars* are fine)</label>
-            <textarea id="t" value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste here…" />
-            <div style={{ marginTop: 10 }}>
-              <span className="meta">Try the demo data: </span>
-              <div className="row" style={{ marginTop: 6, gap: 8 }}>
-                {verifyExamples().map((ex) => (
-                  <button
-                    key={ex.label}
-                    className="btn ghost small"
-                    title={`Expected: ${ex.expect}`}
-                    onClick={() => {
-                      setText(ex.text)
-                      setVerdict(null)
-                    }}
-                  >
-                    {ex.label}
-                  </button>
-                ))}
-              </div>
+        <aside className="chat" aria-label="Sample forwards">
+          <div className="chat-head">
+            <span className="avatar" aria-hidden>
+              💬
+            </span>
+            <div>
+              <div className="title">Forwards from your groups</div>
+              <div className="sub">Tap a message to check it</div>
             </div>
           </div>
-        )}
-        {mode === "code" && (
-          <div className="field">
-            <label htmlFor="c">The Asli code printed on the notice, e.g. DBSE-26-7K3Q</label>
-            <input id="c" value={code} onChange={(e) => setCode(e.target.value)} autoCapitalize="characters" />
+          <div className="chat-body">
+            <span className="chat-note">Sample messages from the Asli demo institutions</span>
+            {examples.map((ex) => (
+              <button
+                key={ex.label}
+                className="bubble"
+                aria-pressed={picked === ex.label}
+                title={`Expected: ${ex.expect}`}
+                disabled={busy !== null}
+                onClick={() => {
+                  setMode("text")
+                  setText(ex.text)
+                  setPicked(ex.label)
+                  void run({ mode: "text", value: ex.text })
+                }}
+              >
+                <span className="who">
+                  <span>{ex.from}</span>
+                  <span style={{ fontWeight: 400, color: "var(--muted)" }}>{ex.group}</span>
+                </span>
+                <span className="fwd">↪ Forwarded</span>
+                <span className="txt">{ex.text.replace(/^Forwarded many times\n/, "")}</span>
+                <span className="foot">
+                  <span className="check">Check this →</span>
+                  <span>{ex.time}</span>
+                </span>
+              </button>
+            ))}
           </div>
-        )}
-        {(mode === "pdf" || mode === "image") && (
-          <div className="field">
-            <label htmlFor="f">
-              {mode === "pdf"
-                ? "The PDF. It is hashed in your browser and never uploaded."
-                : "A screenshot of the notice (English works best; Hindi is best effort). Read in your browser, never uploaded."}
-            </label>
-            <input
-              id="f"
-              type="file"
-              accept={mode === "pdf" ? "application/pdf" : "image/*"}
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-          </div>
-        )}
-
-        <div className="row" style={{ marginTop: 16 }}>
-          <button className="btn" onClick={run} disabled={busy !== null}>
-            {busy ? "Checking…" : "Check notice"}
-          </button>
-          {busy && <span className="meta">{busy}</span>}
-        </div>
-        {error && <p className="error">{error}</p>}
+        </aside>
       </div>
 
-      {verdict && <VerdictCard verdict={verdict} fromOcr={fromOcr} />}
-      {ocrText && (
-        <details className="card">
-          <summary>Text read from the screenshot</summary>
-          <p className="notice-body">{ocrText}</p>
-        </details>
-      )}
+      <Institutions />
 
-      <div className="grid2">
-        <div className="card">
-          <h3>Why you can trust the answer</h3>
-          <p className="meta" style={{ fontSize: 14 }}>
-            Your browser reads Arkiv directly and checks the institution&apos;s own website for the wallet it publishes
-            from. Asli&apos;s server is not involved, so Asli could not fake a &quot;real&quot; even if it wanted to.
-          </p>
+      <section>
+        <p className="section-title">How Asli decides</p>
+        <div className="how">
+          <div className="card">
+            <div className="n">1</div>
+            <h3>Institutions sign what they publish</h3>
+            <p className="meta" style={{ fontSize: 14 }}>
+              Each notice is written to Arkiv from the institution&apos;s own wallet, and its website lists that wallet.
+              An impostor can copy the name, not the wallet.
+            </p>
+          </div>
+          <div className="card">
+            <div className="n">2</div>
+            <h3>Your browser checks it, not us</h3>
+            <p className="meta" style={{ fontSize: 14 }}>
+              The check reads Arkiv and the institution&apos;s website directly from your device. Asli&apos;s server is not
+              involved, so Asli could not fake a &quot;real&quot; even if it wanted to.
+            </p>
+          </div>
+          <div className="card">
+            <div className="n">3</div>
+            <h3>Notices end when they should</h3>
+            <p className="meta" style={{ fontSize: 14 }}>
+              A notice lives on Arkiv only until its valid-until date. Postponing extends it; withdrawing removes it and
+              leaves a public withdrawal. Old forwards stop passing on their own.
+            </p>
+          </div>
         </div>
-        <div className="card">
-          <h3>Why expired notices fail</h3>
-          <p className="meta" style={{ fontSize: 14 }}>
-            Each notice lives on Arkiv only until its own valid-until date. A postponement extends it on the record; a
-            withdrawal deletes it and leaves a public revocation in the same transaction.
-          </p>
-        </div>
-      </div>
+      </section>
     </div>
+  )
+}
+
+function Institutions() {
+  const { issuers } = useIssuers()
+  const trusted = (issuers ?? []).filter((i) => i.proof.ok)
+  return (
+    <section>
+      <p className="section-title">Institutions publishing on Asli</p>
+      <div className="strip">
+        {issuers === null ? (
+          <span className="meta">Checking each institution&apos;s website…</span>
+        ) : (
+          trusted.map((i) => (
+            <Link key={i.key} href={`/issuer/${i.creator}`} className="chip-inst">
+              <InstLogo name={i.name} address={i.creator} />
+              {i.name}
+              <span className="tick">✓ {i.domain}</span>
+            </Link>
+          ))
+        )}
+        <Link href="/publish" className="chip-inst" style={{ paddingLeft: 12 }}>
+          + Publish as your institution
+        </Link>
+      </div>
+    </section>
   )
 }
