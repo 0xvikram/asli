@@ -24,17 +24,48 @@ Built for the Arkiv Global Tour Stop (pre-Devcon 8, Mumbai). Tracks: **Best Indi
 
 All issuers, notices and documents are **fictional demo data**. No real institution, brand or person is represented.
 
+<p align="center"><img src="docs/img/home.jpg" alt="Asli home: check a notice before you forward it" width="880"></p>
+
+<table><tr>
+<td width="42%"><img src="docs/img/verdict-doctored.jpg" alt="A doctored forward: three checks pass, word-for-word fails, the changed date and added fee are highlighted"></td>
+<td><img src="docs/img/institution-console.jpg" alt="Institution console: demo institutions, live notices with Postponed and Live labels"><br><br><img src="docs/img/live-board.jpg" alt="Live notices, updated over Arkiv entity events"></td>
+</tr></table>
+
+## For judges: where everything is
+
+| Requirement | Where |
+|---|---|
+| Public deployment | https://asli-verify.vercel.app (issuer domains: `asli-board`, `asli-puneuni`, `asli-acme` `.vercel.app`) |
+| MIT, open source | this repo, [`LICENSE`](LICENSE) |
+| Entity schema | [`arkiv/schema.md`](arkiv/schema.md) (kept in sync with the code by `tests/unit/docs.test.ts`) |
+| Friction report | [`arkiv/friction.md`](arkiv/friction.md): 8 entries, each with expected, actual, repro and fix |
+| Entity-creating wallets | the table below, and [`arkiv/seed-output.json`](arkiv/seed-output.json) with every entity key and transaction |
+| Tests | `npm test`: 124 unit tests; `ARKIV_INTEGRATION=1 npm test` adds live Tiramisu tests |
+
+### Wallets that create entities (Tiramisu, chain 7738577)
+
+| Role | Wallet | Domain that vouches for it |
+|---|---|---|
+| Demo Board of Secondary Education | [`0x2043DB00a32bd8C4804227B72b97438af39a7De6`](https://tiramisu.explorer.arkiv.network/address/0x2043DB00a32bd8C4804227B72b97438af39a7De6) | asli-board.vercel.app |
+| Pune Demo University | [`0x94a9C31a9dcdd7EBD44b9c4d7511a27149ec6F81`](https://tiramisu.explorer.arkiv.network/address/0x94a9C31a9dcdd7EBD44b9c4d7511a27149ec6F81) | asli-puneuni.vercel.app |
+| Acme Infotech (offer letters) | [`0x51Ad2Cf42bc81C254bcdd078e15c75890532905f`](https://tiramisu.explorer.arkiv.network/address/0x51Ad2Cf42bc81C254bcdd078e15c75890532905f) | asli-acme.vercel.app |
+| Impostor (claims the board's name) | [`0x1E4f823262253f131fAdE44a3A6b1574C01a7062`](https://tiramisu.explorer.arkiv.network/address/0x1E4f823262253f131fAdE44a3A6b1574C01a7062) | none: the board's domain lists a different wallet, so Asli flags it |
+
 ## Try it in one minute (no wallet)
 
-1. Open the app. On **Verify**, click **Doctored forward**, then **Check notice**. You get
-   "Fake: someone changed a real notice", with the moved date and the added fee highlighted.
-2. Click the other examples: Real, Postponed, Withdrawn, Hindi + English, Impostor, Expired.
-3. **Live board**: every notice in force from verified issuers, updated over a WebSocket.
-4. **Publish**: act as the Demo Board, publish a notice, postpone or withdraw it, and watch the
-   board and the verdicts change. Each write links to its transaction on the explorer.
-5. **Offer letter**: upload [`acme-offer-letter.pdf`](public/samples/acme-offer-letter.pdf)
-   (real) and [`acme-offer-letter-edited.pdf`](public/samples/acme-offer-letter-edited.pdf)
-   (the scammer's copy asking for a deposit).
+1. Open https://asli-verify.vercel.app. In **Forwards from your groups**, tap the first message
+   (a doctored forward). You get **Fake: someone changed a real notice**, the NAKLI stamp, the
+   moved date (12 → 19) and the added fee highlighted, and **What we checked**: found on Arkiv,
+   signed by the board's wallet, the board's domain vouches for it, does not match word for word.
+2. Tap the other messages: a real copy, a postponed notice, a withdrawn one, a Hindi + English
+   circular, an impostor, and a short-lived notice that turns **Expired** after 18 Oct.
+3. **Notice code**: type `DBSE-26-2H96`, or open https://asli-verify.vercel.app/?code=DBSE-26-PR5P.
+4. **Live notices**: every notice in force, updated over Arkiv's WebSocket events with no refresh.
+5. **For institutions**: pick a demo institution, publish a notice, then postpone or withdraw it,
+   and watch the live board and the verdicts change. Each write links to its transaction.
+6. **Offer letters**: check [`acme-offer-letter.pdf`](public/samples/acme-offer-letter.pdf)
+   (registered by Acme) and [`acme-offer-letter-edited.pdf`](public/samples/acme-offer-letter-edited.pdf)
+   (the scammer's copy). Only the file's fingerprint is compared.
 
 ## Reproduce the Arkiv usage yourself (no Asli needed)
 
@@ -69,6 +100,13 @@ author is the chain-set `$creator`, readers query without us, expiry is a protoc
 and the queries Asli depends on (by hash, by creator, by time) are native. IPFS cannot answer
 "all live notices from this board". A subgraph puts an operator back in the middle and turns
 expiry into our own date comparison.
+
+**Who is in the read path.** The browser reads Arkiv's public RPC and the institution's
+`/.well-known/asli-issuer.json` itself; Asli's server is not involved, so Asli cannot forge a
+"real". Arkiv also has an anonymous query budget (about 100 queries, see
+[friction #8](arkiv/friction.md)). Only when Arkiv refuses with `ANON_COST_LIMITED` does the
+browser retry through Asli's read relay (`/api/arkiv`), which forwards read methods only with
+Asli's access key, and the result says so.
 
 **Kept off Arkiv on purpose:** PDFs (fingerprint only), any personal data (not even hashed), keys,
 OCR and diffing (done in the browser), and the playground rate limits.
@@ -116,5 +154,5 @@ Keep the issuer key in a hardware wallet or a Safe multisig, publish the wallet 
 - `scripts/seed.ts`, `scripts/make-samples.ts`: demo data
 - `tests/`: unit tests (with an in-memory Arkiv) and live integration tests
 
-Built 9–18 Oct 2026 for the challenge. No pre-existing code beyond the `create-next-app`
+Built 16–18 Oct 2026 for the challenge. No pre-existing code beyond the `create-next-app`
 scaffold (commit `10864a3`). MIT licensed.

@@ -155,7 +155,7 @@ export function checkSteps(v: Verdict): CheckStep[] {
         vouched(v.issuer.domain),
         {
           label: "Matches word for word",
-          detail: `${v.changes.length || "Some"} change${v.changes.length === 1 ? "" : "s"} from the real notice. See them below.`,
+          detail: `${v.changes.length || "Some"} change${v.changes.length === 1 ? "" : "s"} from the real notice, shown above.`,
           state: "fail",
         },
       ]
