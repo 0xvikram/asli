@@ -69,3 +69,24 @@ testnet (chain 7738577), 16–18 Oct 2026.
 - **Fix:** in `EntityMutationError`, check the sender's balance when estimation fails with
   `gas required exceeds: 0` (or a 0 allowance) and say "no GLM", with the faucet link.
   Asli's integration test now checks `getBalance` first and skips with that message.
+
+## 6. Access keys: what changes, measured (worked, one surprise)
+
+- **Surface:** Hub access key (`ark_live_…`, 41 characters) sent as `X-API-KEY` to the
+  Tiramisu HTTP RPC, 16 Oct 2026.
+- **Tested:** the same `eth_chainId` call with no key, with the real key, and with a made-up key.
+- **Expected:** the key raises limits, and a bad key falls back to the public tier or gets a
+  clear error.
+- **Actual:**
+  - No key: `200`, `ratelimit: limit=600, remaining=599, reset=60` (600 calls a minute).
+  - Real key: `200`, `ratelimit: limit=9999, remaining=9998, reset=1`, plus
+    `arkiv-quota-used-percent: 0`. The headers make the quota easy to watch. Nice.
+  - Made-up key: `401`. A typo in the key turns a working app into a failing one rather than
+    falling back to the public tier.
+- **Repro:** `curl -s -D - -o /dev/null -X POST https://rpc.tiramisu.db-chain.testnet.arkiv.network
+  -H 'content-type: application/json' -H 'X-API-KEY: <key>'
+  -d '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}'`
+- **Fix / docs:** document the two tiers and the 401 behaviour on the Access Keys page, and
+  return a JSON-RPC error body with the 401 ("unknown access key") so SDK users see the cause,
+  not a generic HTTP error. Asli only sends the key from its server, so the browser path keeps
+  working on the public tier whatever happens to the key.
