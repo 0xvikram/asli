@@ -75,3 +75,17 @@ describe("verdictCopy", () => {
     expect(verdictCopy(v.altered, { fromOcr: true }).headline).not.toMatch(/fake/i)
   })
 })
+
+describe("postponed copy", () => {
+  it("has no doubled full stop when the reason ends with one", async () => {
+    const { verdictCopy: copy } = await import("@/lib/ui")
+    const c = copy({
+      status: "real",
+      notice: { validUntil: 0 } as never,
+      issuer: { domain: "x", name: "X" } as never,
+      amendments: [{ reason: "Moved.", newValidUntil: Date.UTC(2026, 10, 9), issuedAt: 0 } as never],
+    })
+    expect(c.detail).not.toContain("..")
+    expect(c.detail).toContain("Now in force until")
+  })
+})

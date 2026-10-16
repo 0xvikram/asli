@@ -157,3 +157,15 @@ describe("verifyOffer", () => {
     expect((await verifyOffer(r, `0x${"44".repeat(32)}`, prove)).status).toBe("unknown")
   })
 })
+
+describe("multiple postponements", () => {
+  it("shows the newest amendment first", async () => {
+    const { fake, w, issued, r } = await world()
+    await postponeNotice(w, { noticeKey: issued.entityKey, newValidUntil: fake.inDays(30), reason: "First move", now: fake.now() })
+    fake.advanceDays(1)
+    await postponeNotice(w, { noticeKey: issued.entityKey, newValidUntil: fake.inDays(40), reason: "Second move", now: fake.now() })
+    const v = await verify(r, { text: EXAM_NOTICE }, prove)
+    if (v.status !== "real") throw new Error(v.status)
+    expect(v.amendments.map((a) => a.reason)).toEqual(["Second move", "First move"])
+  })
+})

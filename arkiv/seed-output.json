@@ -1,0 +1,130 @@
+{
+  "network": "Tiramisu (7738577)",
+  "seededAt": "2026-10-16T06:38:43.553Z",
+  "wallets": {
+    "board": {
+      "address": "0x2043DB00a32bd8C4804227B72b97438af39a7De6",
+      "domain": "asli-board.vercel.app",
+      "role": "Demo Board of Secondary Education (verified issuer)"
+    },
+    "univ": {
+      "address": "0x94a9C31a9dcdd7EBD44b9c4d7511a27149ec6F81",
+      "domain": "asli-puneuni.vercel.app",
+      "role": "Pune Demo University (verified issuer)"
+    },
+    "employer": {
+      "address": "0x51Ad2Cf42bc81C254bcdd078e15c75890532905f",
+      "domain": "asli-acme.vercel.app",
+      "role": "Acme Infotech (verified issuer)"
+    },
+    "impostor": {
+      "address": "0x1E4f823262253f131fAdE44a3A6b1574C01a7062",
+      "domain": "asli-board.vercel.app",
+      "role": "Impostor: claims the board's name and domain, but the domain does not list this wallet"
+    }
+  },
+  "entities": [
+    {
+      "what": "issuer board",
+      "kind": "issuer",
+      "key": "0xcf4c820e91a42cbfc90712ed191f4ffe184f19c139e85dcdac07d42f1ddc0577",
+      "tx": "0xff8cd48aa2c2ab82dd49f3c14f8ab5bb6e3d2dc525c0796428beaee605109910",
+      "creator": "0x2043DB00a32bd8C4804227B72b97438af39a7De6"
+    },
+    {
+      "what": "issuer univ",
+      "kind": "issuer",
+      "key": "0xef7d1d87455f4e37224de7363bf2583528ab0f85bc98303922e10cb8373e89b9",
+      "tx": "0x62a61f463cbb2130ee13a2273a2540d1a3efd6b3f9bccc1dd22fb164e39e3fca",
+      "creator": "0x94a9C31a9dcdd7EBD44b9c4d7511a27149ec6F81"
+    },
+    {
+      "what": "issuer employer",
+      "kind": "issuer",
+      "key": "0x132613c0255ef76bc997c8eb45c49f0819231eeac2ccf41a29fd382c61dbea22",
+      "tx": "0xf65dfd7759c883b64fa00f9b0ac913baeb50e7aa7adecc3b3d75e0fff4e70ffb",
+      "creator": "0x51Ad2Cf42bc81C254bcdd078e15c75890532905f"
+    },
+    {
+      "what": "issuer impostor",
+      "kind": "issuer",
+      "key": "0xf9e513dda83d6ccb9e3d71cd638e7be15bcc30d1a84d31fe77f425b19f4b1947",
+      "tx": "0x83b4b0e78cbf7c37b0eafe0cba1267f712963d41a744aa4baa620ce4a7e6e160",
+      "creator": "0x1E4f823262253f131fAdE44a3A6b1574C01a7062"
+    },
+    {
+      "what": "notice maths-preboard (DBSE-26-2H96)",
+      "kind": "notice",
+      "key": "0x24070c0995949e289a573dada0756f77bff0b55e06d883ca499e89165e450927",
+      "tx": "0x8829a4764041ed4454fb12fbef0e1c661fe33036b0b041086b88f69514e68d05",
+      "code": "DBSE-26-2H96",
+      "creator": "0x2043DB00a32bd8C4804227B72b97438af39a7De6"
+    },
+    {
+      "what": "notice physics-practical (DBSE-26-PR5P)",
+      "kind": "notice",
+      "key": "0x14ebe382336c2affd2a919184d2fbc9efbbd2d699eb0b8206f120425ee9ea84c",
+      "tx": "0x5e377599be5391175d1517308ac0b6763e1113ae89ba34806a57cde362b86f3b",
+      "code": "DBSE-26-PR5P",
+      "creator": "0x2043DB00a32bd8C4804227B72b97438af39a7De6"
+    },
+    {
+      "what": "  postponed physics-practical (extend + amendment, one batch)",
+      "kind": "amendment",
+      "key": "0xebe612cbe6142317cb7b5caecfc76ba22a2793589a617e0ba3d3a5c6c11b6d42",
+      "tx": "0x94cf31d0f4e4ec5ecbb4eafca9144391ffd7b99e3644e751d561f4f22ac0cd0b"
+    },
+    {
+      "what": "notice winter-break (DBSE-26-R3WE)",
+      "kind": "notice",
+      "key": "0xedf5108f8ae2ac964a0a863f8fc01b73ee58c806420d6d518e81e223b24b28a7",
+      "tx": "0xe5b192cb7798b945f2ae047e8367ad66b7ab7b80989b5407f854a6a4328dbe7f",
+      "code": "DBSE-26-R3WE",
+      "creator": "0x2043DB00a32bd8C4804227B72b97438af39a7De6"
+    },
+    {
+      "what": "  revoked winter-break (revocation + delete, one batch)",
+      "kind": "revocation",
+      "key": "0xc0976cd1b48e71d9cc0cbdb3a2cc8f52e2bf3a3d309d4a6b84537b22c65c64d1",
+      "tx": "0x4983284580a37847a6f907d56e522f4dc2e337d8a72944362f5b13f6a03ca3f4"
+    },
+    {
+      "what": "notice fee-deadline (PDU-26-TB9P)",
+      "kind": "notice",
+      "key": "0xc926170897d7973f332113eac24336142fd65ed947e3325168df60df3a9f9c0a",
+      "tx": "0x2e134e0c674a4455a0e178a52113f767184f4cd083d0170aea0f608802f7648c",
+      "code": "PDU-26-TB9P",
+      "creator": "0x94a9C31a9dcdd7EBD44b9c4d7511a27149ec6F81"
+    },
+    {
+      "what": "notice campus-closed (PDU-26-HJ9L)",
+      "kind": "notice",
+      "key": "0xc65746013696d06e79c0f5d88838ed13bf2e0e4f71639e5ddce8c7c2db6649ad",
+      "tx": "0x5a5f32d950ad3dd8432e72a56a3ccd40e94ca659d2531f9e9a86d0c57505daac",
+      "code": "PDU-26-HJ9L",
+      "creator": "0x94a9C31a9dcdd7EBD44b9c4d7511a27149ec6F81"
+    },
+    {
+      "what": "notice orientation (PDU-26-K8CD)",
+      "kind": "notice",
+      "key": "0x9a0805a405dc391ec3b6d8bf8574adb58e8241be58ded7fa7811d92e67a672c0",
+      "tx": "0x0e36e7a8b06ca87f1fc7d8c275366344b0e9b40375639cd66c2dbfaf0ab36a00",
+      "code": "PDU-26-K8CD",
+      "creator": "0x94a9C31a9dcdd7EBD44b9c4d7511a27149ec6F81"
+    },
+    {
+      "what": "impostor notice (DBSE-26-KPU4)",
+      "kind": "notice",
+      "key": "0xd9851a21cdb0169cedf6b9c06e1bd0405f9917e500bbea4a753a3e5a5a18c57c",
+      "tx": "0x70fb8119a3b9b9402b458aa283db7093051e2fe580ed4c5fb49948bfe05d9b1d",
+      "creator": "0x1E4f823262253f131fAdE44a3A6b1574C01a7062"
+    },
+    {
+      "what": "offer acme-offer-letter.pdf",
+      "kind": "offer",
+      "key": "0x2824378ad3c94f3f49d1a9d1ffe67e036afa9a144b7073127e2da9c665843a57",
+      "tx": "0xd306aefb2dd7137f753d3a5cc1eedcca424f524165d25ebe422e555b08081709",
+      "creator": "0x51Ad2Cf42bc81C254bcdd078e15c75890532905f"
+    }
+  ]
+}

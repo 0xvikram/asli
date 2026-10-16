@@ -51,7 +51,7 @@ export function verdictCopy(v: Verdict, opts: { fromOcr?: boolean } = {}): Verdi
         hindi: "यह सूचना असली है",
         detail:
           v.amendments.length > 0
-            ? `Postponed by the issuer: ${v.amendments[0].reason}. Valid till ${formatDay(v.amendments[0].newValidUntil)}.`
+            ? `Postponed by the issuer: ${v.amendments[0].reason.replace(/[.\s]+$/, "")}. Now in force until ${formatDay(v.amendments[0].newValidUntil)}.`
             : `Published by ${v.issuer.name}. Valid till ${formatDay(v.notice.validUntil)}.`,
       }
     case "altered":

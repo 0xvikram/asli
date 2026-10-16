@@ -108,7 +108,8 @@ export async function verify(
   for (const notice of exact) {
     const issuer = isTrusted(notice.creator)
     if (issuer) {
-      const amendments = await amendmentsOf(client, notice.key)
+      // Newest postponement first: a notice can be postponed more than once.
+      const amendments = (await amendmentsOf(client, notice.key)).sort((a, b) => b.issuedAt - a.issuedAt)
       // A code match is only "real" for the text if the text (when given) also matches.
       if (text && notice.textHash !== textHash) {
         const m = matchAgainst(text, [notice.body])

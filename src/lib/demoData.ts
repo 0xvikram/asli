@@ -43,7 +43,7 @@ Students must bring their practical file and admit card.`,
     category: "exam",
     lang: "en",
     validDays: 9,
-    then: { postponeDays: 21, reason: "Moved after the state election dates were announced. New start date: 7 November 2026." },
+    then: { postponeDays: 24, reason: "Moved after the state election dates were announced. Practicals now run 7 to 8 November 2026" },
   },
   {
     id: "winter-break",
