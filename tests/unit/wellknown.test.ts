@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { GET, wellKnownBody } from "@/app/api/well-known/route"
+import { GET } from "@/app/api/well-known/route"
 import { parseWellKnown } from "@/lib/domainProof"
-import { demoIssuers } from "@/lib/issuers"
+import { demoIssuers, wellKnownBody } from "@/lib/issuers"
 import { privateKeyToAccount } from "viem/accounts"
 import { readFileSync, existsSync } from "node:fs"
 

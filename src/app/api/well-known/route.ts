@@ -1,4 +1,4 @@
-import { issuersForHost } from "@/lib/issuers"
+import { wellKnownBody } from "@/lib/issuers"
 
 export const dynamic = "force-dynamic"
 
@@ -7,13 +7,6 @@ export const dynamic = "force-dynamic"
  * has its own hostname on this deployment, and each host lists only its own wallet, exactly as a
  * real institution would publish the file on its own site. Open CORS so any verifier can read it.
  */
-export function wellKnownBody(host: string | null) {
-  return {
-    asli: 1 as const,
-    issuers: issuersForHost(host).map((i) => ({ address: i.address, name: i.name })),
-  }
-}
-
 export async function GET(req: Request) {
   const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host")
   const body = wellKnownBody(host)

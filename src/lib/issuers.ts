@@ -75,3 +75,11 @@ export function issuerKey(issuer: DemoIssuer): Hex | undefined {
   const k = process.env[issuer.envKey]?.trim()
   return k && /^0x[0-9a-fA-F]{64}$/.test(k) ? (k as Hex) : undefined
 }
+
+/** Body of /.well-known/asli-issuer.json for a host: only the wallets that host vouches for. */
+export function wellKnownBody(host: string | null) {
+  return {
+    asli: 1 as const,
+    issuers: issuersForHost(host).map((i) => ({ address: i.address, name: i.name })),
+  }
+}
