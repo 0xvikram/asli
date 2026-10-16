@@ -232,8 +232,11 @@ export function offersByFileHash(client: Reader, fileHash: Hex) {
   return all(client, and(kindIs("offer"), eq("file_hash", bytes32(fileHash))), toOffer, 1)
 }
 
-/** Look-backs for "did this notice exist before it expired?", newest first. */
-export const LOOKBACK_DAYS = [1, 3, 7, 13]
+/**
+ * Look-backs for "did this notice exist before it expired?". Dense enough that a notice alive
+ * for a day or more is caught at least once within the chain's history.
+ */
+export const LOOKBACK_DAYS = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 7, 8, 10, 12]
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | "timeout"> {
   return Promise.race([p, new Promise<"timeout">((r) => setTimeout(() => r("timeout"), ms))])
@@ -242,7 +245,8 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | "timeout"> {
 /**
  * A notice that has expired is no longer returned at the head. Reading the same narrow query at
  * earlier blocks tells "this was real but has expired" apart from "this never existed".
- * Best effort: a slow historical read returns `undefined` (unknown), never a false "fake".
+ * Best effort: a slow historical read counts as "not found" (unknown), never a false "fake".
+ * The look-backs run in parallel; the most recent hit wins.
  */
 export async function findExpiredNotice(
   client: Reader,
@@ -254,18 +258,20 @@ export async function findExpiredNotice(
     ? and(kindIs("notice"), eq("text_hash", bytes32(where.textHash)))
     : and(kindIs("notice"), eq("code", normalizeCode(where.code as string)))
   const timing = await client.getBlockTiming()
-  for (const days of LOOKBACK_DAYS) {
-    const back = BigInt(Math.floor((days * 86_400) / timing.blockDuration))
-    if (back >= timing.currentBlock) break
-    const atBlock = timing.currentBlock - back
-    try {
-      const res = await withTimeout(all(client, expr, toNotice, 1, atBlock), timeoutMs)
-      if (res !== "timeout" && res.length > 0) return { notice: res[0], seenAtBlock: atBlock }
-    } catch {
-      // Historical reads are best effort.
-    }
-  }
-  return undefined
+  const blocks = LOOKBACK_DAYS.map((days) => BigInt(Math.floor((days * 86_400) / timing.blockDuration)))
+    .filter((back) => back < timing.currentBlock)
+    .map((back) => timing.currentBlock - back)
+  const results = await Promise.all(
+    blocks.map(async (atBlock) => {
+      try {
+        const res = await withTimeout(all(client, expr, toNotice, 1, atBlock), timeoutMs)
+        return res !== "timeout" && res.length > 0 ? { notice: res[0], seenAtBlock: atBlock } : undefined
+      } catch {
+        return undefined
+      }
+    }),
+  )
+  return results.find((r) => r !== undefined)
 }
 
 /** Converts an expiry block into wall-clock time using the node's own block timing. */

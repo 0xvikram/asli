@@ -1,0 +1,67 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 700 >>
+stream
+BT
+/F2 16 Tf
+1 0 0 1 56 766 Tm
+(ACME INFOTECH \(fictional demo employer\)) Tj
+/F1 11 Tf
+1 0 0 1 56 747 Tm
+(asli-acme.vercel.app) Tj
+/F1 11 Tf
+1 0 0 1 56 728 Tm
+( ) Tj
+/F2 11 Tf
+1 0 0 1 56 709 Tm
+(Letter of Offer   Ref: ACME/HR/2026/GSE/0417) Tj
+/F1 11 Tf
+1 0 0 1 56 690 Tm
+(Dear Sample Candidate,) Tj
+/F1 11 Tf
+1 0 0 1 56 671 Tm
+(We are pleased to offer you the role of Graduate Software Engineer in Pune.) Tj
+/F1 11 Tf
+1 0 0 1 56 652 Tm
+(Annual fixed compensation: Rs 9,00,000.) Tj
+/F1 11 Tf
+1 0 0 1 56 633 Tm
+(Pay a refundable training deposit of Rs 15,000 to confirm your joining.) Tj
+/F1 11 Tf
+1 0 0 1 56 614 Tm
+( ) Tj
+/F1 11 Tf
+1 0 0 1 56 595 Tm
+(Head of Talent Acquisition, Acme Infotech) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000001002 00000 n 
+0000001072 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1147
+%%EOF

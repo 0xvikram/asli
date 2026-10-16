@@ -7,14 +7,9 @@ import { VerdictCard } from "@/components/VerdictCard"
 import { hashFileBytes } from "@/lib/normalize"
 import { fileToBytes } from "@/lib/ui"
 import { verify, type Verdict } from "@/lib/verify"
+import { verifyExamples } from "@/lib/demoData"
 
 type Mode = "text" | "code" | "pdf" | "image"
-
-const SAMPLE_FAKE = `*DEMO BOARD OF SECONDARY EDUCATION*
-Notice No. DBSE/EXAM/2026/41
-The Class X Mathematics board exam will be held on 19 March 2026 from 10:30 am to 1:30 pm.
-Admit cards can be downloaded from the board website from 1 March 2026.
-🙏 Please share with all parents`
 
 export default function VerifyPage() {
   const [mode, setMode] = useState<Mode>("text")
@@ -106,10 +101,23 @@ export default function VerifyPage() {
           <div className="field">
             <label htmlFor="t">The notice, exactly as you received it (emoji and *stars* are fine)</label>
             <textarea id="t" value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste here…" />
-            <div className="row" style={{ marginTop: 8 }}>
-              <button className="btn ghost small" onClick={() => setText(SAMPLE_FAKE)}>
-                Try a doctored example
-              </button>
+            <div style={{ marginTop: 10 }}>
+              <span className="meta">Try the demo data: </span>
+              <div className="row" style={{ marginTop: 6, gap: 8 }}>
+                {verifyExamples().map((ex) => (
+                  <button
+                    key={ex.label}
+                    className="btn ghost small"
+                    title={`Expected: ${ex.expect}`}
+                    onClick={() => {
+                      setText(ex.text)
+                      setVerdict(null)
+                    }}
+                  >
+                    {ex.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
