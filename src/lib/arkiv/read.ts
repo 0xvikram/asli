@@ -211,6 +211,11 @@ export function noticesOfIssuer(client: Reader, issuer: Hex, maxPages = MAX_SCAN
   return all(client, and(kindIs("notice"), eq("$creator", addr(issuer))), toNotice, maxPages)
 }
 
+export async function noticeByKey(client: Reader, noticeKey: Hex): Promise<NoticeRecord | undefined> {
+  const res = await all(client, and(kindIs("notice"), eq("$key", key(noticeKey))), toNotice, 1)
+  return res[0]
+}
+
 export function amendmentsOf(client: Reader, noticeKey: Hex) {
   return all(client, and(kindIs("amendment"), eq("notice", key(noticeKey))), toAmendment, 1)
 }
