@@ -23,7 +23,13 @@ export type NoticeRecord = BaseRecord & {
   category: string
   lang: string
   issuedAt: number
+  /**
+   * When the notice actually stops being valid: the entity's expiry on Arkiv, converted to time.
+   * A postponement extends the entity, so this moves; the attribute below does not.
+   */
   validUntil: number
+  /** The validity written at issue time (`valid_until` attribute, readonly). */
+  originalValidUntil: number
   title: string
   body: string
   refNo: string | null
@@ -129,6 +135,7 @@ export function toNotice(e: RawEntity): NoticeRecord {
     lang: s(attrValue(a, "lang")),
     issuedAt: num(attrValue(a, "issued_at")),
     validUntil: num(attrValue(a, "valid_until")),
+    originalValidUntil: num(attrValue(a, "valid_until")),
     title: s(p.title),
     body: s(p.body),
     refNo: typeof p.refNo === "string" ? p.refNo : null,
@@ -194,25 +201,45 @@ export function listIssuers(client: Reader) {
   return all(client, kindIs("issuer"), toIssuer)
 }
 
+/**
+ * The entity's expiry is the source of truth for validity. Block timing is cached briefly so a
+ * verify that runs several queries asks the node for it once.
+ */
+const timingCache = new WeakMap<object, { at: number; timing: Awaited<ReturnType<Reader["getBlockTiming"]>> }>()
+async function blockTiming(client: Reader) {
+  const hit = timingCache.get(client)
+  if (hit && Date.now() - hit.at < 15_000) return hit.timing
+  const timing = await client.getBlockTiming()
+  timingCache.set(client, { at: Date.now(), timing })
+  return timing
+}
+
+async function notices(client: Reader, expr: Expression, maxPages: number, atBlock?: bigint) {
+  const [list, timing] = await Promise.all([all(client, expr, toNotice, maxPages, atBlock), blockTiming(client)])
+  return list.map((n) =>
+    n.expiresAtBlock > 0n ? { ...n, validUntil: blockToDate(n.expiresAtBlock, timing).getTime() } : n,
+  )
+}
+
 export function noticesByTextHash(client: Reader, textHash: Hex) {
-  return all(client, and(kindIs("notice"), eq("text_hash", bytes32(textHash))), toNotice, 1)
+  return notices(client, and(kindIs("notice"), eq("text_hash", bytes32(textHash))), 1)
 }
 
 export function noticesByCode(client: Reader, code: string) {
-  return all(client, and(kindIs("notice"), eq("code", normalizeCode(code))), toNotice, 1)
+  return notices(client, and(kindIs("notice"), eq("code", normalizeCode(code))), 1)
 }
 
 export function noticesByFileHash(client: Reader, fileHash: Hex) {
-  return all(client, and(kindIs("notice"), eq("file_hash", bytes32(fileHash))), toNotice, 1)
+  return notices(client, and(kindIs("notice"), eq("file_hash", bytes32(fileHash))), 1)
 }
 
 /** Live notices of one issuer. `$creator` is the filter: an attribute could be forged. */
 export function noticesOfIssuer(client: Reader, issuer: Hex, maxPages = MAX_SCAN_PAGES) {
-  return all(client, and(kindIs("notice"), eq("$creator", addr(issuer))), toNotice, maxPages)
+  return notices(client, and(kindIs("notice"), eq("$creator", addr(issuer))), maxPages)
 }
 
 export async function noticeByKey(client: Reader, noticeKey: Hex): Promise<NoticeRecord | undefined> {
-  const res = await all(client, and(kindIs("notice"), eq("$key", key(noticeKey))), toNotice, 1)
+  const res = await notices(client, and(kindIs("notice"), eq("$key", key(noticeKey))), 1)
   return res[0]
 }
 
@@ -264,7 +291,7 @@ export async function findExpiredNotice(
   const results = await Promise.all(
     blocks.map(async (atBlock) => {
       try {
-        const res = await withTimeout(all(client, expr, toNotice, 1, atBlock), timeoutMs)
+        const res = await withTimeout(notices(client, expr, 1, atBlock), timeoutMs)
         return res !== "timeout" && res.length > 0 ? { notice: res[0], seenAtBlock: atBlock } : undefined
       } catch {
         return undefined

@@ -153,3 +153,15 @@ describe("offer", () => {
     expect(res.entityKey).toMatch(/^0x/)
   })
 })
+
+describe("effective validity", () => {
+  it("validUntil follows the entity's expiry after a postponement; the original stays", async () => {
+    const { fake, w, issued, r } = await setup()
+    const [before] = await noticesByCode(r, issued.code)
+    expect(Math.abs(before.validUntil - fake.inDays(20).getTime())).toBeLessThan(5_000)
+    await postponeNotice(w, { noticeKey: issued.entityKey, newValidUntil: fake.inDays(35), reason: "Moved", now: fake.now() })
+    const [after] = await noticesByCode(r, issued.code)
+    expect(Math.abs(after.validUntil - fake.inDays(35).getTime())).toBeLessThan(5_000)
+    expect(after.originalValidUntil).toBe(before.originalValidUntil)
+  })
+})

@@ -90,3 +90,23 @@ testnet (chain 7738577), 16–18 Oct 2026.
   return a JSON-RPC error body with the 401 ("unknown access key") so SDK users see the cause,
   not a generic HTTP error. Asli only sends the key from its server, so the browser path keeps
   working on the public tier whatever happens to the key.
+
+## 7. `expiresAt` comes back as a block number only; apps must convert it to a date
+
+- **Surface:** SDK 0.8.1 `query` / `getEntity` (`Entity.expiresAt: bigint`), plus
+  `getBlockTiming()`.
+- **Expected:** a way to show "valid till 9 Nov" for an entity: either the expiry as a timestamp
+  alongside the block, or an SDK helper `blockToDate(block)`. Creation takes a `Date`
+  (`ExpirationTime.atDate`), so reading it back as a date seemed natural.
+- **Actual:** only the block height. Asli first displayed the notice's own `valid_until`
+  attribute, which was wrong after a postponement: the notice is `readonly`, so the attribute
+  cannot change, while `extendEntity` moved the real expiry. The live board showed "valid till
+  25 Oct" for a notice extended to 9 Nov. The fix was to convert `expiresAt` with
+  `currentBlockTime + (expiresAt − currentBlock) × blockDuration` from `getBlockTiming()`.
+- **Repro:** create with `expires: ExpirationTime.atDate(d1)` and `flags: { readonly: true }`,
+  then `extendEntity({ expires: ExpirationTime.atDate(d2) })`, then read it back: you get a block
+  height and nothing that reads as `d2`.
+- **Fix:** add `blockToDate` / `dateToBlock` helpers to the SDK (it already does the reverse
+  inside `atDate`), or return an estimated `expiresAtTime` in the RPC projection. Worth a line in
+  the docs too: on a readonly entity, the expiry, not an attribute, is the place to keep a
+  deadline that may move.
