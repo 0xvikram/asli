@@ -193,7 +193,7 @@ export function checkSteps(v: Verdict): CheckStep[] {
       return [
         {
           label: `Searched ${v.checkedIssuers} verified institution${v.checkedIssuers === 1 ? "" : "s"}`,
-          detail: "Live notices, withdrawn notices, and notices that ended in the last 12 days.",
+          detail: "Live notices, withdrawn notices, and notices that ended in the last week.",
           state: "info",
         },
         { label: "Found a matching notice", detail: "Nothing close to this text or code.", state: "fail" },

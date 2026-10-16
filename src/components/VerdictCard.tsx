@@ -70,7 +70,15 @@ function CopyReply({ text }: { text: string }) {
   )
 }
 
-export function VerdictCard({ verdict, fromOcr }: { verdict: Verdict; fromOcr?: boolean }) {
+export function VerdictCard({
+  verdict,
+  fromOcr,
+  viaRelay,
+}: {
+  verdict: Verdict
+  fromOcr?: boolean
+  viaRelay?: boolean
+}) {
   const copy = verdictCopy(verdict, { fromOcr })
   const issuer = "issuer" in verdict ? verdict.issuer : undefined
   const notice = "notice" in verdict ? verdict.notice : undefined
@@ -159,6 +167,12 @@ export function VerdictCard({ verdict, fromOcr }: { verdict: Verdict; fromOcr?: 
             </a>
           )}
         </div>
+        {viaRelay && (
+          <p className="meta" style={{ margin: 0 }}>
+            Read through Asli&apos;s relay: Arkiv&apos;s free read limit for your network was used up, so Asli forwarded
+            these reads with its own access key. Check again in a few minutes to read Arkiv directly.
+          </p>
+        )}
         {issuer && notice && (
           <p className="meta" style={{ margin: 0 }}>
             Wallet {shortAddress(issuer.creator)} · proof via{" "}

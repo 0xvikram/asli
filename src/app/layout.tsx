@@ -45,6 +45,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <Link href="/about">How it works</Link>
               <Link href="/publish">For institutions</Link>
               <a href="https://github.com/0xvikram/asli">Source (MIT)</a>
+              <a href="https://x.com/vikram_twt" target="_blank" rel="noreferrer">
+                Built by @vikram_twt
+              </a>
             </div>
             <div className="big-word" aria-hidden>
               Asli असली

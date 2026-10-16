@@ -1,5 +1,5 @@
 import { addr, bytes32, key, type Attributes } from "@arkiv-network/sdk/attr"
-import { and, eq, type Expression } from "@arkiv-network/sdk/query"
+import { and, eq, or, type Expression } from "@arkiv-network/sdk/query"
 import type { Hex } from "viem"
 import { normalizeCode } from "../normalize"
 import { APP, type IssuerProfile, type Kind } from "../schema"
@@ -197,8 +197,20 @@ async function all<T>(
   return out
 }
 
-export function listIssuers(client: Reader) {
-  return all(client, kindIs("issuer"), toIssuer)
+/**
+ * Issuers change rarely, and every check needs the list, so it is fetched once a minute per
+ * client instead of once per check. Each Arkiv query costs quota (see friction.md #8).
+ */
+const issuerCache = new WeakMap<object, { at: number; list: Promise<IssuerRecord[]> }>()
+export const ISSUER_CACHE_MS = 60_000
+
+export function listIssuers(client: Reader): Promise<IssuerRecord[]> {
+  const hit = issuerCache.get(client)
+  if (hit && Date.now() - hit.at < ISSUER_CACHE_MS) return hit.list
+  const list = all(client, kindIs("issuer"), toIssuer)
+  issuerCache.set(client, { at: Date.now(), list })
+  list.catch(() => issuerCache.delete(client))
+  return list
 }
 
 /**
@@ -238,6 +250,13 @@ export function noticesOfIssuer(client: Reader, issuer: Hex, maxPages = MAX_SCAN
   return notices(client, and(kindIs("notice"), eq("$creator", addr(issuer))), maxPages)
 }
 
+/** Live notices of several issuers in one query, for the near-match scan. */
+export function noticesOfIssuers(client: Reader, issuers: Hex[], maxPages = MAX_SCAN_PAGES) {
+  if (issuers.length === 0) return Promise.resolve([] as NoticeRecord[])
+  if (issuers.length === 1) return noticesOfIssuer(client, issuers[0], maxPages)
+  return notices(client, and(kindIs("notice"), or(issuers.map((i) => eq("$creator", addr(i))))), maxPages)
+}
+
 export async function noticeByKey(client: Reader, noticeKey: Hex): Promise<NoticeRecord | undefined> {
   const res = await notices(client, and(kindIs("notice"), eq("$key", key(noticeKey))), 1)
   return res[0]
@@ -260,10 +279,11 @@ export function offersByFileHash(client: Reader, fileHash: Hex) {
 }
 
 /**
- * Look-backs for "did this notice exist before it expired?". Dense enough that a notice alive
- * for a day or more is caught at least once within the chain's history.
+ * Look-backs for "did this notice exist before it expired?". At most a day apart for the first
+ * 5.5 days, so a notice that lived a day or more and ended within the last week is caught.
+ * Eight points, not more: each one is a paid query (friction.md #8).
  */
-export const LOOKBACK_DAYS = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 7, 8, 10, 12]
+export const LOOKBACK_DAYS = [0.25, 0.75, 1.5, 2.5, 3.5, 4.5, 5.5, 7]
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | "timeout"> {
   return Promise.race([p, new Promise<"timeout">((r) => setTimeout(() => r("timeout"), ms))])

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Fragment, useEffect, useMemo, useRef, useState } from "react"
 import type { Hex } from "viem"
-import { browserReader, cachedProve } from "@/components/arkivBrowser"
+import { browserReader, cachedProve, relayedCount } from "@/components/arkivBrowser"
 import { InstLogo } from "@/components/Brand"
 import { useIssuers } from "@/components/useTrustedIssuers"
 import { VerdictCard } from "@/components/VerdictCard"
@@ -23,6 +23,7 @@ export default function VerifyPage() {
   const [busy, setBusy] = useState<string | null>(null)
   const [verdict, setVerdict] = useState<Verdict | null>(null)
   const [fromOcr, setFromOcr] = useState(false)
+  const [viaRelay, setViaRelay] = useState(false)
   const [ocrText, setOcrText] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [picked, setPicked] = useState<string | null>(null)
@@ -32,7 +33,9 @@ export default function VerifyPage() {
   async function check(input: VerifyInput, label: string, ocr = false) {
     setBusy(label)
     setFromOcr(ocr)
+    const before = relayedCount()
     const v = await withTimeout(verify(browserReader(), input, cachedProve), CHECK_TIMEOUT_MS, ARKIV_BUSY)
+    setViaRelay(relayedCount() > before)
     setVerdict(v)
   }
 
@@ -82,11 +85,11 @@ export default function VerifyPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const tabs: { id: Mode; label: string }[] = [
-    { id: "text", label: "Paste text" },
-    { id: "image", label: "Screenshot" },
-    { id: "pdf", label: "PDF" },
-    { id: "code", label: "Notice code" },
+  const tabs: { id: Mode; label: string; short: string }[] = [
+    { id: "text", label: "Paste text", short: "Text" },
+    { id: "image", label: "Screenshot", short: "Screenshot" },
+    { id: "pdf", label: "PDF", short: "PDF" },
+    { id: "code", label: "Notice code", short: "Code" },
   ]
 
   return (
@@ -150,7 +153,8 @@ export default function VerifyPage() {
                         setError(null)
                       }}
                     >
-                      {t.label}
+                      <span className="long">{t.label}</span>
+                      <span className="short">{t.short}</span>
                     </button>
                   ))}
                 </div>
@@ -235,7 +239,7 @@ export default function VerifyPage() {
               </div>
 
               <div ref={resultRef} className="stack" style={{ scrollMarginTop: 130 }}>
-                {verdict && <VerdictCard verdict={verdict} fromOcr={fromOcr} />}
+                {verdict && <VerdictCard verdict={verdict} fromOcr={fromOcr} viaRelay={viaRelay} />}
                 {ocrText && (
                   <details className="card">
                     <summary>Text read from the screenshot</summary>

@@ -126,7 +126,7 @@ Written in Arkiv's query language; the app builds them with the SDK's `and` / `e
 Also:
 - `$key = key(<k>)` combined with `kind = notice`: fetch one notice (API ownership checks, board updates).
 - **Historical reads:** `noticeByTextHash` / `noticeByCode` with `atBlock` at 13 look-backs
-  (6 hours to 12 days, in parallel, 8 s timeout each) to tell "was real, has expired" from
+  (8 points from 6 hours to 7 days, in parallel, 8 s timeout each) to tell "was real, has expired" from
   "never existed".
 - **Live:** `watchEntityEvents` over WebSocket (`wss://rpc.tiramisu.db-chain.testnet.arkiv.network`),
   no `fromBlock`. Created / ExpiryExtended / Deleted events whose owner is a trusted issuer update

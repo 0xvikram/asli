@@ -9,7 +9,7 @@ import {
   noticesByCode,
   noticesByFileHash,
   noticesByTextHash,
-  noticesOfIssuer,
+  noticesOfIssuers,
   offersByFileHash,
   revocationsByCode,
   revocationsByTextHash,
@@ -140,10 +140,14 @@ export async function verify(
 
   // 3. Near matches against every trusted issuer's live notices.
   if (text) {
-    const pools = await Promise.all(
-      [...trusted.values()].map(async (issuer) => ({ issuer, notices: await noticesOfIssuer(client, issuer.creator) })),
+    const live = await noticesOfIssuers(
+      client,
+      [...trusted.values()].map((i) => i.creator),
     )
-    const candidates = pools.flatMap((p) => p.notices.map((notice) => ({ notice, issuer: p.issuer })))
+    const candidates = live.flatMap((notice) => {
+      const issuer = isTrusted(notice.creator)
+      return issuer ? [{ notice, issuer }] : []
+    })
     const m = matchAgainst(
       text,
       candidates.map((c) => c.notice.body),
