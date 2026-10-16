@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { Fragment, useEffect, useMemo, useRef, useState } from "react"
 import type { Hex } from "viem"
 import { browserReader, cachedProve } from "@/components/arkivBrowser"
 import { InstLogo } from "@/components/Brand"
@@ -11,6 +11,7 @@ import { hashFileBytes } from "@/lib/normalize"
 import { fileToBytes } from "@/lib/ui"
 import { verify, type Verdict, type VerifyInput } from "@/lib/verify"
 import { verifyExamples } from "@/lib/demoData"
+import { STATS } from "@/lib/stats"
 
 type Mode = "text" | "code" | "pdf" | "image"
 
@@ -33,7 +34,6 @@ export default function VerifyPage() {
     setFromOcr(ocr)
     const v = await verify(browserReader(), input, cachedProve)
     setVerdict(v)
-    requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }))
   }
 
   async function run(override?: { mode: Mode; value: string }) {
@@ -66,6 +66,11 @@ export default function VerifyPage() {
     }
   }
 
+  // Bring the answer into view once it has rendered.
+  useEffect(() => {
+    if (verdict) resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [verdict])
+
   // A shared link like /?code=DBSE-26-2H96 opens straight to the answer.
   useEffect(() => {
     const c = new URLSearchParams(window.location.search).get("code")
@@ -85,167 +90,226 @@ export default function VerifyPage() {
   ]
 
   return (
-    <div className="stack home">
-      <div className="hero">
-        <div className="stack">
-          <div>
-            <span className="eyebrow">For parents, students and job seekers in India</span>
-            <h1>Check a notice before you forward it.</h1>
-            <p className="lede" style={{ marginBottom: 0 }}>
-              Paste a school, board, university or exam notice from WhatsApp. Asli compares it with what the institution
-              itself published, and shows exactly what was changed if someone doctored it.
-              <br />
-              <span className="hi">व्हाट्सऐप पर आई सूचना पेस्ट करें, हम बताएँगे कि यह असली है या नकली।</span>
-            </p>
-          </div>
-
-          <div className="card verify-card">
-            <div className="tabs" role="tablist">
-              {tabs.map((t) => (
-                <button
-                  key={t.id}
-                  className="tab"
-                  role="tab"
-                  aria-selected={mode === t.id}
-                  onClick={() => {
-                    setMode(t.id)
-                    setFile(null)
-                    setVerdict(null)
-                    setError(null)
-                  }}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {mode === "text" && (
-              <div className="field">
-                <label htmlFor="t">The notice, exactly as you received it. Emoji and *stars* are fine.</label>
-                <textarea
-                  id="t"
-                  value={text}
-                  onChange={(e) => {
-                    setText(e.target.value)
-                    setPicked(null)
-                  }}
-                  placeholder="Paste the forwarded message here…"
-                />
-              </div>
-            )}
-            {mode === "code" && (
-              <div className="field">
-                <label htmlFor="c">The Asli code printed at the bottom of the notice</label>
-                <input
-                  id="c"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  autoCapitalize="characters"
-                  placeholder="e.g. DBSE-26-2H96"
-                />
-                <p className="hint">
-                  Try <button className="linkish" onClick={() => setCode("DBSE-26-2H96")}>DBSE-26-2H96</button>. Spaces
-                  and lowercase are fine.
-                </p>
-              </div>
-            )}
-            {(mode === "pdf" || mode === "image") && (
-              <div className="field">
-                <div className="dropzone">
-                  <label htmlFor="f" style={{ marginBottom: 0 }}>
-                    {mode === "pdf"
-                      ? "Choose the PDF. Only its fingerprint is checked; the file never leaves your device."
-                      : "Choose a screenshot of the notice. It is read on your device and never uploaded."}
-                  </label>
-                  <input
-                    id="f"
-                    type="file"
-                    accept={mode === "pdf" ? "application/pdf" : "image/*"}
-                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  />
-                </div>
-                <p className="hint">
-                  {mode === "pdf" ? (
-                    <>
-                      No PDF handy? Download the board&apos;s{" "}
-                      <a href="/samples/dbse-notice-41.pdf" download>
-                        sample notice
-                      </a>{" "}
-                      and check it.
-                    </>
-                  ) : (
-                    "English reads best. Hindi is best effort, so a screenshot that is close but not identical shows as a warning, not a fake."
-                  )}
-                </p>
-              </div>
-            )}
-
-            <div className="row" style={{ marginTop: 16 }}>
-              <button className="btn big" onClick={() => run()} disabled={busy !== null}>
-                {busy ? (
-                  <>
-                    <span className="spinner" /> Checking
-                  </>
-                ) : (
-                  "Check notice"
-                )}
-              </button>
-              {busy && <span className="meta">{busy}</span>}
-            </div>
-            {error && <p className="error">{error}</p>}
-          </div>
-
-          <div ref={resultRef} className="stack" style={{ scrollMarginTop: 130 }}>
-            {verdict && <VerdictCard verdict={verdict} fromOcr={fromOcr} />}
-            {ocrText && (
-              <details className="card">
-                <summary>Text read from the screenshot</summary>
-                <p className="notice-body">{ocrText}</p>
-              </details>
-            )}
-          </div>
+    <div className="home">
+      <section className="blue-hero">
+        <div className="hero-tiles" aria-hidden>
+          <span>Asli असली Asli असली Asli असली</span>
+          <span>Nakli नकली Nakli नकली Nakli नकली</span>
+          <span>Asli असली Asli असली Asli असली</span>
+          <span>Nakli नकली Nakli नकली Nakli नकली</span>
         </div>
-
-        <aside className="chat" aria-label="Sample forwards">
-          <div className="chat-head">
-            <span className="avatar" aria-hidden>
-              💬
+        <div className="wrap">
+          <span className="eyebrow">For parents, students and job seekers in India</span>
+          <h1 className="hero-title">
+            {["Check", "a", "notice", "before", "you"].map((w, i) => (
+              <Fragment key={w}>
+                <span className="w" style={{ animationDelay: `${i * 70}ms` }}>
+                  {w}
+                </span>{" "}
+              </Fragment>
+            ))}
+            <span className="w o" style={{ animationDelay: "380ms" }}>
+              forward
+            </span>{" "}
+            <span className="w o" style={{ animationDelay: "450ms" }}>
+              it.
             </span>
-            <div>
-              <div className="title">Forwards from your groups</div>
-              <div className="sub">Tap a message to check it</div>
-            </div>
-          </div>
-          <div className="chat-body">
-            <span className="chat-note">Sample messages from the Asli demo institutions</span>
-            {examples.map((ex) => (
-              <button
-                key={ex.label}
-                className="bubble"
-                aria-pressed={picked === ex.label}
-                title={`Expected: ${ex.expect}`}
-                disabled={busy !== null}
-                onClick={() => {
-                  setMode("text")
-                  setText(ex.text)
-                  setPicked(ex.label)
-                  void run({ mode: "text", value: ex.text })
-                }}
+          </h1>
+          <p className="lede" style={{ marginBottom: 0 }}>
+            Paste a school, board, university or exam notice from WhatsApp. Asli compares it with what the institution
+            itself published, and shows exactly what was changed if someone doctored it.
+            <br />
+            <span className="hi">व्हाट्सऐप पर आई सूचना पेस्ट करें, हम बताएँगे कि यह असली है या नकली।</span>
+          </p>
+
+          <div className="stickers">
+            {STATS.map((st, i) => (
+              <a
+                key={st.value}
+                className="sticker"
+                href={st.url}
+                target="_blank"
+                rel="noreferrer"
+                style={{ animationDelay: `${600 + i * 110}ms` }}
               >
-                <span className="who">
-                  <span>{ex.from}</span>
-                  <span style={{ fontWeight: 400, color: "var(--muted)" }}>{ex.group}</span>
-                </span>
-                <span className="fwd">↪ Forwarded</span>
-                <span className="txt">{ex.text.replace(/^Forwarded many times\n/, "")}</span>
-                <span className="foot">
-                  <span className="check">Check this →</span>
-                  <span>{ex.time}</span>
-                </span>
-              </button>
+                <span className="big">{st.value}</span>
+                <span className="what">{st.label}</span>
+                <span className="src">Source: {st.source} ↗</span>
+              </a>
             ))}
           </div>
-        </aside>
+
+          <div className="hero">
+            <div className="stack">
+              <div className="card verify-card">
+                <div className="tabs" role="tablist">
+                  {tabs.map((t) => (
+                    <button
+                      key={t.id}
+                      className="tab"
+                      role="tab"
+                      aria-selected={mode === t.id}
+                      onClick={() => {
+                        setMode(t.id)
+                        setFile(null)
+                        setVerdict(null)
+                        setError(null)
+                      }}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                {mode === "text" && (
+                  <div className="field">
+                    <label htmlFor="t">The notice, exactly as you received it. Emoji and *stars* are fine.</label>
+                    <textarea
+                      id="t"
+                      value={text}
+                      onChange={(e) => {
+                        setText(e.target.value)
+                        setPicked(null)
+                      }}
+                      placeholder="Paste the forwarded message here…"
+                    />
+                  </div>
+                )}
+                {mode === "code" && (
+                  <div className="field">
+                    <label htmlFor="c">The Asli code printed at the bottom of the notice</label>
+                    <input
+                      id="c"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      autoCapitalize="characters"
+                      placeholder="e.g. DBSE-26-2H96"
+                    />
+                    <p className="hint">
+                      Try{" "}
+                      <button className="linkish" onClick={() => setCode("DBSE-26-2H96")}>
+                        DBSE-26-2H96
+                      </button>
+                      . Spaces and lowercase are fine.
+                    </p>
+                  </div>
+                )}
+                {(mode === "pdf" || mode === "image") && (
+                  <div className="field">
+                    <div className="dropzone">
+                      <label htmlFor="f" style={{ marginBottom: 0 }}>
+                        {mode === "pdf"
+                          ? "Choose the PDF. Only its fingerprint is checked; the file never leaves your device."
+                          : "Choose a screenshot of the notice. It is read on your device and never uploaded."}
+                      </label>
+                      <input
+                        id="f"
+                        type="file"
+                        accept={mode === "pdf" ? "application/pdf" : "image/*"}
+                        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                      />
+                    </div>
+                    <p className="hint">
+                      {mode === "pdf" ? (
+                        <>
+                          No PDF handy? Download the board&apos;s{" "}
+                          <a href="/samples/dbse-notice-41.pdf" download>
+                            sample notice
+                          </a>{" "}
+                          and check it.
+                        </>
+                      ) : (
+                        "English reads best. Hindi is best effort, so a screenshot that is close but not identical shows as a warning, not a fake."
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                <div className="row" style={{ marginTop: 16 }}>
+                  <button className="btn big" onClick={() => run()} disabled={busy !== null}>
+                    {busy ? (
+                      <>
+                        <span className="spinner" /> Checking
+                      </>
+                    ) : (
+                      "Check notice"
+                    )}
+                  </button>
+                  {busy && <span className="meta">{busy}</span>}
+                </div>
+                {error && <p className="error">{error}</p>}
+              </div>
+
+              <div ref={resultRef} className="stack" style={{ scrollMarginTop: 130 }}>
+                {verdict && <VerdictCard verdict={verdict} fromOcr={fromOcr} />}
+                {ocrText && (
+                  <details className="card">
+                    <summary>Text read from the screenshot</summary>
+                    <p className="notice-body">{ocrText}</p>
+                  </details>
+                )}
+              </div>
+            </div>
+
+            <aside className="chat" aria-label="Sample forwards">
+              <div className="chat-head">
+                <span className="avatar" aria-hidden>
+                  💬
+                </span>
+                <div>
+                  <div className="title">Forwards from your groups</div>
+                  <div className="sub">Tap a message to check it</div>
+                </div>
+              </div>
+              <div className="chat-body">
+                <span className="chat-note">Sample messages from the Asli demo institutions</span>
+                {examples.map((ex) => (
+                  <button
+                    key={ex.label}
+                    className="bubble"
+                    aria-pressed={picked === ex.label}
+                    title={`Expected: ${ex.expect}`}
+                    disabled={busy !== null}
+                    onClick={() => {
+                      setMode("text")
+                      setText(ex.text)
+                      setPicked(ex.label)
+                      void run({ mode: "text", value: ex.text })
+                    }}
+                  >
+                    <span className="who">
+                      <span>{ex.from}</span>
+                      <span style={{ fontWeight: 400, color: "var(--muted)" }}>{ex.group}</span>
+                    </span>
+                    <span className="fwd">↪ Forwarded</span>
+                    <span className="txt">{ex.text.replace(/^Forwarded many times\n/, "")}</span>
+                    <span className="foot">
+                      <span className="check">Check this →</span>
+                      <span>{ex.time}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <div className="ticker" aria-hidden>
+        <div className="ticker-track">
+          {[0, 1].map((k) => (
+            <span key={k}>
+              <span>Real ✓</span>
+              <span>Fake ✕</span>
+              <span>Postponed</span>
+              <span>Withdrawn</span>
+              <span>Expired</span>
+              <span>Impostor</span>
+              <span>असली</span>
+              <span>नकली</span>
+            </span>
+          ))}
+        </div>
       </div>
 
       <Institutions />
@@ -265,8 +329,8 @@ export default function VerifyPage() {
             <div className="n">2</div>
             <h3>Your browser checks it, not us</h3>
             <p className="meta" style={{ fontSize: 14 }}>
-              The check reads Arkiv and the institution&apos;s website directly from your device. Asli&apos;s server is not
-              involved, so Asli could not fake a &quot;real&quot; even if it wanted to.
+              The check reads Arkiv and the institution&apos;s website directly from your device. Asli&apos;s server is
+              not involved, so Asli could not fake a &quot;real&quot; even if it wanted to.
             </p>
           </div>
           <div className="card">

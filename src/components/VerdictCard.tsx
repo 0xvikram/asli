@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { explorerAddress } from "@/lib/arkiv/client"
 import type { DiffOp } from "@/lib/match"
-import { checkSteps, formatDate, shareText, shortAddress, verdictCopy, type CheckStep } from "@/lib/ui"
+import { checkSteps, formatDate, shareText, shortAddress, stampText, verdictCopy, type CheckStep } from "@/lib/ui"
 import type { Verdict } from "@/lib/verify"
 
 const ICON = { good: "✓", bad: "✕", warn: "!", neutral: "?" } as const
@@ -76,9 +76,16 @@ export function VerdictCard({ verdict, fromOcr }: { verdict: Verdict; fromOcr?: 
   const notice = "notice" in verdict ? verdict.notice : undefined
   const [site, setSite] = useState("https://asli-verify.vercel.app")
   useEffect(() => setSite(window.location.origin), [])
+  const stamp = stampText(verdict, { fromOcr })
 
   return (
     <section className={`verdict ${copy.tone}`} aria-live="polite">
+      {stamp && (
+        <div className="stamp" aria-hidden>
+          {stamp.en}
+          <small>{stamp.hi}</small>
+        </div>
+      )}
       <div className="stack">
         <div className="verdict-head">
           <div className="seal" aria-hidden>
@@ -143,7 +150,12 @@ export function VerdictCard({ verdict, fromOcr }: { verdict: Verdict; fromOcr?: 
             </Link>
           )}
           {(issuer || notice) && (
-            <a className="btn ghost small" href={explorerAddress(issuer?.creator ?? notice!.creator)} target="_blank" rel="noreferrer">
+            <a
+              className="btn ghost small"
+              href={explorerAddress(issuer?.creator ?? notice!.creator)}
+              target="_blank"
+              rel="noreferrer"
+            >
               See the author on the block explorer
             </a>
           )}

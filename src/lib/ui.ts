@@ -222,3 +222,23 @@ export function shareText(v: Verdict, site: string, opts: { fromOcr?: boolean } 
   lines.push(code && v.status !== "unverified-issuer" ? `Check it yourself: ${site}/?code=${code}` : `Check any forward: ${site}`)
   return lines.join("\n")
 }
+
+/** The rubber stamp that lands on a result: one word in English, one in Hindi. */
+export function stampText(v: Verdict, opts: { fromOcr?: boolean } = {}): { en: string; hi: string } | null {
+  switch (v.status) {
+    case "real":
+      return { en: "Asli", hi: "असली" }
+    case "altered":
+      return opts.fromOcr ? { en: "Check", hi: "जाँचें" } : { en: "Nakli", hi: "नकली" }
+    case "revoked":
+      return { en: "Withdrawn", hi: "रद्द" }
+    case "expired":
+      return { en: "Expired", hi: "समाप्त" }
+    case "unverified-issuer":
+      return { en: "Impostor", hi: "फ़र्ज़ी" }
+    case "unknown":
+      return { en: "Unknown", hi: "अज्ञात" }
+    case "empty":
+      return null
+  }
+}

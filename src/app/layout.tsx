@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next"
+import { Anton, Baloo_2, DM_Sans } from "next/font/google"
 import Link from "next/link"
 import { BrandMark } from "@/components/Brand"
 import { Nav } from "@/components/Nav"
@@ -10,11 +11,15 @@ export const metadata: Metadata = {
     "Check a forwarded school, university or job notice. Institutions publish notices on Arkiv; anyone verifies a WhatsApp forward, PDF or screenshot in seconds.",
 }
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1 }
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#1600cf" }
+
+const display = Anton({ weight: "400", subsets: ["latin"], variable: "--font-display", display: "swap" })
+const hindi = Baloo_2({ weight: ["500", "700"], subsets: ["devanagari", "latin"], variable: "--font-hindi", display: "swap" })
+const body = DM_Sans({ subsets: ["latin"], variable: "--font-body", display: "swap" })
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${display.variable} ${hindi.variable} ${body.variable}`}>
       <body>
         <header className="top">
           <div className="wrap">
@@ -40,6 +45,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <Link href="/about">How it works</Link>
               <Link href="/publish">For institutions</Link>
               <a href="https://github.com/0xvikram/asli">Source (MIT)</a>
+            </div>
+            <div className="big-word" aria-hidden>
+              Asli असली
             </div>
           </div>
         </footer>

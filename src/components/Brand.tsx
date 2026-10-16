@@ -4,9 +4,9 @@ export function BrandMark() {
     <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden>
       <path
         d="M16 2.5l3.1 2.3 3.8-.5 1.5 3.6 3.6 1.5-.5 3.8 2.3 3.1-2.3 3.1.5 3.8-3.6 1.5-1.5 3.6-3.8-.5L16 29.5l-3.1-2.3-3.8.5-1.5-3.6-3.6-1.5.5-3.8L2.2 16l2.3-3.1-.5-3.8 3.6-1.5 1.5-3.6 3.8.5z"
-        fill="var(--accent)"
+        fill="var(--orange)"
       />
-      <path d="M10.5 16.4l3.6 3.6 7.4-7.6" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10.5 16.4l3.6 3.6 7.4-7.6" fill="none" stroke="var(--ink)" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

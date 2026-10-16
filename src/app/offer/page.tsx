@@ -36,7 +36,7 @@ export default function OfferPage() {
         <span className="eyebrow">For job seekers</span>
         <h1>Got an offer letter? Check it before you pay anything.</h1>
         <p className="lede">
-          Fake offer letters are how most job scams in India start: a real company&apos;s logo, then a &quot;training
+          Many job scams in India start with a fake offer letter: a real company&apos;s logo, then a &quot;training
           fee&quot;. Check the PDF against what the employer itself registered.
           <br />
           <span className="hi">नौकरी का ऑफ़र लेटर असली है या नहीं, यहाँ जाँचें।</span>

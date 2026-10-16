@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { FakeArkiv } from "../helpers/fakeArkiv"
 import { BOARD, BOARD_DOMAIN, EXAM_NOTICE, fakeProver, seedBoard } from "../helpers/fixtures"
 import { issueNotice } from "@/lib/arkiv/write"
-import { checkSteps, formatDay, shareText, shortAddress, timeLeft, toLocalInput, verdictCopy } from "@/lib/ui"
+import { checkSteps, formatDay, shareText, shortAddress, stampText, timeLeft, toLocalInput, verdictCopy } from "@/lib/ui"
 import { verify, type Verdict } from "@/lib/verify"
 
 describe("formatting", () => {
@@ -155,5 +155,16 @@ describe("checkSteps and shareText", () => {
     const t = shareText(await verify(r, { text: "free laptops for everyone register now" }, prove), SITE)
     expect(t).toContain(SITE)
     expect(t).not.toContain("?code=")
+  })
+})
+
+describe("stampText", () => {
+  it("says Asli for real, Nakli for doctored, and softens doctored screenshots", () => {
+    expect(stampText({ status: "unknown", checkedIssuers: 1 })).toEqual({ en: "Unknown", hi: "अज्ञात" })
+    expect(stampText({ status: "empty" })).toBeNull()
+    const altered = { status: "altered", changes: [], ops: [], similarity: 0.9 } as unknown as Verdict
+    expect(stampText(altered)?.en).toBe("Nakli")
+    expect(stampText(altered, { fromOcr: true })?.en).toBe("Check")
+    expect(stampText({ status: "real" } as unknown as Verdict)?.hi).toBe("असली")
   })
 })
