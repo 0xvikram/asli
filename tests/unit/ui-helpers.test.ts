@@ -168,3 +168,15 @@ describe("stampText", () => {
     expect(stampText({ status: "real" } as unknown as Verdict)?.hi).toBe("असली")
   })
 })
+
+describe("withTimeout", () => {
+  it("passes a fast result through", async () => {
+    const { withTimeout } = await import("@/lib/ui")
+    await expect(withTimeout(Promise.resolve(7), 50, "busy")).resolves.toBe(7)
+  })
+
+  it("rejects with the busy message when the read stalls", async () => {
+    const { withTimeout, ARKIV_BUSY } = await import("@/lib/ui")
+    await expect(withTimeout(new Promise(() => {}), 20, ARKIV_BUSY)).rejects.toThrow(/free read limit/)
+  })
+})

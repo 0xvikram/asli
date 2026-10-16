@@ -93,7 +93,6 @@ export function VerdictCard({ verdict, fromOcr }: { verdict: Verdict; fromOcr?: 
           </div>
           <div style={{ minWidth: 0 }}>
             <div className="headline">{copy.headline}</div>
-            <div className="hi">{copy.hindi}</div>
             {copy.detail && <p style={{ margin: "8px 0 0" }}>{copy.detail}</p>}
           </div>
         </div>

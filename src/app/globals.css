@@ -334,3 +334,11 @@ footer .big-word { font-family: var(--display); font-size: clamp(56px, 12vw, 140
   h1 { font-size: clamp(38px, 11vw, 76px); }
   .verify-card, .card { padding: 16px; }
 }
+
+/* Lighter hero: one line under the headline, compact stickers */
+.hero-sub { font-size: clamp(18px, 2.2vw, 22px); font-weight: 600; color: rgba(255, 255, 255, 0.92); margin: 0; max-width: 40ch; }
+.stickers { margin: 26px 0 34px; gap: 12px; }
+.sticker { padding: 12px 14px 10px; }
+.sticker .what { font-size: 13px; margin-top: 4px; }
+.sticker .src { margin-top: 6px; font-size: 11px; }
+.hero-title { margin-bottom: 14px; }

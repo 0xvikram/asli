@@ -8,7 +8,7 @@ import { InstLogo } from "@/components/Brand"
 import { useIssuers } from "@/components/useTrustedIssuers"
 import { VerdictCard } from "@/components/VerdictCard"
 import { hashFileBytes } from "@/lib/normalize"
-import { fileToBytes } from "@/lib/ui"
+import { ARKIV_BUSY, CHECK_TIMEOUT_MS, fileToBytes, withTimeout } from "@/lib/ui"
 import { verify, type Verdict, type VerifyInput } from "@/lib/verify"
 import { verifyExamples } from "@/lib/demoData"
 import { STATS } from "@/lib/stats"
@@ -32,7 +32,7 @@ export default function VerifyPage() {
   async function check(input: VerifyInput, label: string, ocr = false) {
     setBusy(label)
     setFromOcr(ocr)
-    const v = await verify(browserReader(), input, cachedProve)
+    const v = await withTimeout(verify(browserReader(), input, cachedProve), CHECK_TIMEOUT_MS, ARKIV_BUSY)
     setVerdict(v)
   }
 
@@ -99,7 +99,6 @@ export default function VerifyPage() {
           <span>Nakli नकली Nakli नकली Nakli नकली</span>
         </div>
         <div className="wrap">
-          <span className="eyebrow">For parents, students and job seekers in India</span>
           <h1 className="hero-title">
             {["Check", "a", "notice", "before", "you"].map((w, i) => (
               <Fragment key={w}>
@@ -115,12 +114,7 @@ export default function VerifyPage() {
               it.
             </span>
           </h1>
-          <p className="lede" style={{ marginBottom: 0 }}>
-            Paste a school, board, university or exam notice from WhatsApp. Asli compares it with what the institution
-            itself published, and shows exactly what was changed if someone doctored it.
-            <br />
-            <span className="hi">व्हाट्सऐप पर आई सूचना पेस्ट करें, हम बताएँगे कि यह असली है या नकली।</span>
-          </p>
+          <p className="hero-sub">Paste a WhatsApp forward. See if it&apos;s real in seconds.</p>
 
           <div className="stickers">
             {STATS.map((st, i) => (

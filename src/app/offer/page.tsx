@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { browserReader, cachedProve } from "@/components/arkivBrowser"
 import { hashFileBytes } from "@/lib/normalize"
-import { fileToBytes, formatDay, shortAddress } from "@/lib/ui"
+import { ARKIV_BUSY, CHECK_TIMEOUT_MS, fileToBytes, formatDay, shortAddress, withTimeout } from "@/lib/ui"
 import { verifyOffer, type OfferVerdict } from "@/lib/verify"
 
 export default function OfferPage() {
@@ -22,7 +22,7 @@ export default function OfferPage() {
     try {
       const h = hashFileBytes(await fileToBytes(file))
       setHash(h)
-      setVerdict(await verifyOffer(browserReader(), h, cachedProve))
+      setVerdict(await withTimeout(verifyOffer(browserReader(), h, cachedProve), CHECK_TIMEOUT_MS, ARKIV_BUSY))
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong")
     } finally {
@@ -38,8 +38,6 @@ export default function OfferPage() {
         <p className="lede">
           Many job scams in India start with a fake offer letter: a real company&apos;s logo, then a &quot;training
           fee&quot;. Check the PDF against what the employer itself registered.
-          <br />
-          <span className="hi">नौकरी का ऑफ़र लेटर असली है या नहीं, यहाँ जाँचें।</span>
         </p>
       </div>
 
@@ -74,7 +72,6 @@ export default function OfferPage() {
       {verdict?.status === "real" && (
         <section className="verdict good">
           <div className="headline">Issued by {verdict.issuer.domain}</div>
-          <div className="hi">यह ऑफ़र लेटर असली है</div>
           <p>
             {verdict.offer.roleTitle}, {verdict.offer.location}. The offer is open until{" "}
             {formatDay(verdict.offer.validUntil)}. A genuine employer never asks you to pay to join.
@@ -88,14 +85,12 @@ export default function OfferPage() {
       {verdict?.status === "unverified-issuer" && (
         <section className="verdict bad">
           <div className="headline">Registered, but not by the employer</div>
-          <div className="hi">यह किसी अनधिकृत स्रोत से है</div>
           <p>{verdict.reason}</p>
         </section>
       )}
       {verdict?.status === "unknown" && (
         <section className="verdict neutral">
           <div className="headline">No employer on Asli registered this exact file</div>
-          <div className="hi">किसी कंपनी ने यह फ़ाइल दर्ज नहीं की</div>
           <p>
             Either the employer does not use Asli, the file was edited, or it expired (offers drop off Arkiv after their
             acceptance deadline). Confirm with the company&apos;s official HR email before paying or sharing documents.

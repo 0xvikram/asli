@@ -242,3 +242,18 @@ export function stampText(v: Verdict, opts: { fromOcr?: boolean } = {}): { en: s
       return null
   }
 }
+
+/** How long a check may take before we tell the reader Arkiv is busy. */
+export const CHECK_TIMEOUT_MS = 20_000
+export const ARKIV_BUSY = "Arkiv's free read limit for your network is used up right now. Try again in a few minutes."
+
+/** Rejects with `message` if `p` has not settled within `ms`, so a stalled read never spins forever. */
+export function withTimeout<T>(p: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>
+  return Promise.race([
+    p,
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(message)), ms)
+    }),
+  ]).finally(() => clearTimeout(timer))
+}

@@ -110,3 +110,33 @@ testnet (chain 7738577), 16–18 Oct 2026.
   inside `atDate`), or return an estimated `expiresAtTime` in the RPC projection. Worth a line in
   the docs too: on a readonly entity, the expiry, not an attribute, is the place to keep a
   deadline that may move.
+
+## 8. A second, cost-based limit on anonymous reads, separate from the 600-a-minute limit
+
+- **Surface:** Tiramisu HTTP RPC (`https://rpc.tiramisu.db-chain.testnet.arkiv.network`),
+  `arkiv_query` from the browser with no access key, `@arkiv-network/sdk` 0.8.1 on viem 2.57.7,
+  17 Oct 2026.
+- **Expected:** one documented public limit (the `ratelimit: limit=600, reset=60` header seen in
+  entry 6), and a clear error when it is hit.
+- **Actual:**
+  - After an afternoon of testing from one machine, every `arkiv_query` from the browser
+    returned `429` with
+    `{"error":"ANON_COST_LIMITED","message":"unauthenticated query budget exhausted; get an API key at https://hub.arkiv.network for a monthly quota"}`
+    and `ratelimit: limit=10000, remaining=0, reset=1876`, `retry-after: 1876`.
+  - At the same moment `eth_chainId` from the same machine still returned `200` with
+    `ratelimit: limit=600, remaining=597`. So there are two limits: calls per minute, and a
+    cost budget for anonymous queries that resets on a much longer window.
+  - With an access key, the `arkiv-cost` header shows every `arkiv_query` costs `100`, even one
+    the node rejects as invalid. `arkiv_getBlockTiming` has no `arkiv-cost` header.
+  - So the anonymous budget is about 100 queries. Through viem the `429` surfaced as a check that
+    had not settled after 25 seconds, not as an error the app could show.
+- **Why it matters:** an app that reads Arkiv straight from the reader's browser (so its own
+  server is not trusted) gets about 100 queries per IP before readers are locked out for up to
+  half an hour. Everyone behind a college network, a conference Wi-Fi or a carrier NAT shares
+  that. I could not test from a second IP, so I have not confirmed the budget is per IP.
+- **Repro:** without a key, send about 100 `arkiv_query` calls, then one more; compare with
+  `eth_chainId` and with the same query sent with a key (`arkiv-cost: 100`).
+- **Fix / docs:** document the anonymous cost budget (size, window, how it is keyed) next to the
+  600-a-minute limit, and list the cost of each method. Consider a cheaper cost for queries that
+  return nothing or are rejected, and a read-only browser-safe key for dapps. In Asli: every
+  check now gives up after 20 seconds with a clear "Arkiv is busy" message instead of spinning.
