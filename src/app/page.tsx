@@ -341,9 +341,34 @@ export default function VerifyPage() {
           </div>
         </div>
       </section>
+
+      <section>
+        <p className="section-title">Coming next</p>
+        <div className="how soon-row">
+          {COMING_NEXT.map((c) => (
+            <div className="card" key={c.title}>
+              <span className="badge soon">Coming next</span>
+              <h3>{c.title}</h3>
+              <p className="meta" style={{ fontSize: 14 }}>
+                {c.body}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="meta" style={{ marginTop: 12 }}>
+          Institutions can join today without changing anything they run. <Link href="/about#integrate">See how</Link>
+        </p>
+      </section>
     </div>
   )
 }
+
+const COMING_NEXT = [
+  { title: "Check on WhatsApp", body: "Forward a message to Asli's number and get the verdict back in the same chat." },
+  { title: "Publish from your website", body: "A plugin for school and university sites: post a notice once and it goes to Arkiv too." },
+  { title: "Bulk publishing", body: "Upload a CSV of circulars and sign them all from your institution's wallet in one go." },
+  { title: "Asli inside other apps", body: "An npm package so school apps, news sites and fact-checkers can run the same check." },
+]
 
 function Institutions() {
   const { issuers } = useIssuers()

@@ -136,11 +136,30 @@ publish the file on its own site. Env: `ISSUER_BOARD_KEY`, `ISSUER_UNIV_KEY`,
 `ISSUER_EMPLOYER_KEY`, `ARKIV_ACCESS_KEY`, and optionally `NEXT_PUBLIC_DOMAIN_*` to rename the
 issuer domains.
 
-## For a real institution
+## Add Asli to an existing system
 
-Keep the issuer key in a hardware wallet or a Safe multisig, publish the wallet in DNS
-(`_asli.example.edu.in TXT "asli-issuer=0x…"`) and sign from the MetaMask console or the
-`scripts/` helpers. Print the Asli code on every circular.
+An institution needs two steps. Nothing it already runs (website, ERP, student portal) changes.
+
+1. **Prove the wallet is yours.** Put `/.well-known/asli-issuer.json` on your website listing your
+   wallet, or add `_asli.example.edu.in TXT "asli-issuer=0x…"` in DNS. About five minutes.
+2. **Publish as you do now, plus one step.** Paste the same circular into the console (`/publish`)
+   and sign with your wallet. Postpone or withdraw it there later. Keep the key in a hardware
+   wallet or a Safe multisig, and print the Asli code on every circular.
+
+No account, no database, and Asli never holds a real institution's keys (the server-held keys
+are only for the three demo issuers). Anyone else can integrate on the reading side without us:
+every notice is public on Arkiv in the schema in [`arkiv/schema.md`](arkiv/schema.md), so a
+school app, news site or fact-checker can run the same check with the Arkiv SDK.
+
+## Coming next (not built yet)
+
+| For | What | Effort |
+|---|---|---|
+| Everyone on WhatsApp | A bot: forward a message to Asli's number, get the verdict back in the chat (needs a WhatsApp Business API account) | ~1 week |
+| School and university websites | A "publish to Asli" plugin, so posting a notice publishes it to Arkiv too | a few days per CMS |
+| Big boards | Bulk publishing from a CSV, signed from the institution's own wallet (logic is in `src/lib/schema.ts`) | ~1 day |
+| Developers | `asli-verify` npm package wrapping `src/lib/verify.ts`: one call returns real, altered, withdrawn, expired or unknown | 1–2 days |
+| Employers | HR tools publish each offer letter's fingerprint when the offer goes out (webhook) | ~1 day |
 
 ## Project layout
 

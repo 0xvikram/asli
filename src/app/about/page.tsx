@@ -94,6 +94,51 @@ export default function AboutPage() {
         ))}
       </div>
 
+      <h2 id="integrate">Add Asli to what an institution already runs</h2>
+      <div className="card">
+        <h3>Two steps, nothing to replace</h3>
+        <ol>
+          <li>
+            Prove the wallet is yours: put <code>/.well-known/asli-issuer.json</code> on your website listing your wallet, or add
+            a DNS record <code>_asli.your-domain TXT &quot;asli-issuer=0x…&quot;</code>. About five minutes for your IT team.
+          </li>
+          <li>
+            Publish as you do now, then paste the same circular into the <a href="/publish">console</a> and sign with your
+            wallet. Postpone or withdraw it there later.
+          </li>
+        </ol>
+        <p className="meta">
+          No account, no database, no change to your website, ERP or student portal. Asli never holds a real
+          institution&apos;s keys.
+        </p>
+      </div>
+      <div className="card">
+        <h3>Other apps can read the same data</h3>
+        <p className="meta" style={{ fontSize: 14 }}>
+          Every notice is public on Arkiv, in the schema below. A school app, a news site or a fact-checker can query it with
+          the Arkiv SDK and run the same check, without asking us and without our servers.
+        </p>
+      </div>
+
+      <h2>Coming next</h2>
+      <div className="grid2">
+        {[
+          ["Check on WhatsApp", "Forward a message to Asli's number and get the verdict back in the same chat."],
+          ["Website plugin", "Post a notice on your school or university site and it is published to Arkiv at the same time."],
+          ["Bulk publishing", "Upload a CSV of circulars and sign them all from the institution's own wallet."],
+          ["npm package", "asli-verify: one call returns real, altered, withdrawn, expired or unknown, for any app."],
+          ["Offer letters from HR tools", "The HR system publishes each offer letter's fingerprint when the offer goes out."],
+        ].map(([t, b]) => (
+          <div className="card" key={t}>
+            <span className="badge soon">Coming next</span>
+            <h3>{t}</h3>
+            <p className="meta" style={{ fontSize: 14 }}>
+              {b}
+            </p>
+          </div>
+        ))}
+      </div>
+
       <h2>Demo issuers (fictional)</h2>
       <div className="card">
         <table>
