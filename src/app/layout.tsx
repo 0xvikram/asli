@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next"
 import type { Metadata, Viewport } from "next"
 import { Anton, Baloo_2, DM_Sans } from "next/font/google"
 import Link from "next/link"
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </div>
           </div>
         </footer>
+        <Analytics />
       </body>
     </html>
   )
